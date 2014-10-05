@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build" name="SmallSet">
+  <property name="target" value="1.8" />
+  <property name="source" value="1.8" />
+
+  <target name="clean">
+    <delete dir="../bin" />
+  </target>
+
+  <target name="compile">
+    <javac debug="true" debuglevel="${debuglevel}" destdir="../bin" srcdir="../src" includeantruntime="false" source="${source}" target="${target}" />
+  </target>
+
+  <target name="build">
+    <tstamp>
+      <format property="TIME" pattern="yyyy-MM-dd-HH-mm-ss" locale="en,GB" />
+    </tstamp>
+    <jar jarfile="smallset.jar" basedir="../bin">
+      <exclude name="**/*Test*" />
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0" />
+        <attribute name="Built-By" value="Claude Martin" />
+        <attribute name="Sealed" value="true" />
+        <attribute name="Implementation-Time" value="${TIME}" />
+        <attribute name="Implementation-Title" value="${ant.project.name}" />
+        <attribute name="Implementation-Vendor" value="Claude Martin" />
+        <attribute name="Implementation-Vendor-URL" value="http://claude-martin.ch/" />
+      </manifest>
+    </jar>
+
+  </target>
+
+</project>
