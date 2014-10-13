@@ -1,7 +1,7 @@
 package ch.claude_martin.smallset;
 
-import static ch.claude_martin.smallset.SmallSetTest.Alphabet.*;
 import static ch.claude_martin.smallset.SmallSet.*;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 
@@ -11,11 +11,11 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.stream.IntStream;
 
 import org.junit.Test;
 
@@ -207,9 +207,9 @@ public class SmallSetTest {
 
     toSet(singleton(31));
 
-    final byte _0 = 0;
-    final byte _1 = 1;
-    final byte _5 = 5;
+    final Byte _0 = 0;
+    final Byte _1 = 1;
+    final Byte _5 = 5;
     assertEquals(Collections.EMPTY_SET, toSet(empty()));
     assertEquals(new TreeSet<>(asList(_1, _5)), toSet(of(1, 5)));
     assertEquals(new TreeSet<>(asList(_0, _1, _5)), toSet(of(0, 1, 5)));
@@ -218,14 +218,25 @@ public class SmallSetTest {
   }
 
   @Test
+  public final void testToArray() {
+
+    toArray(singleton(31));
+
+    assertArrayEquals(new byte[0], toArray(empty()));
+    assertArrayEquals(new byte[] { 1, 5 }, toArray(of(1, 5)));
+    assertArrayEquals(new byte[] { 0, 1, 5 }, toArray(of(0, 1, 5)));
+    for (byte i = 0; i < 32; i++)
+      assertArrayEquals(new byte[] { i }, toArray(singleton(i)));
+  }
+
+  @Test
   public void testRandom() throws Exception {
-    final Random rng = new SecureRandom();
+    final Random rng = new Random();
     final int set = of(1, 3, 5);
     for (int i = 0; i < 100; i++)
       assertTrue(contains(set, random(set, rng)));
 
     assertEquals(0, random(singleton(0), rng));
-
   }
 
   public static enum Alphabet {
@@ -276,10 +287,31 @@ public class SmallSetTest {
   }
 
   @Test
+  public void testNext() throws Exception {
+    final Byte[] bytes = new Byte[] { 4, 5, 12, 15, 18, 23, 25, 27, 29, 31 };
+    final Set<Byte> expected = new TreeSet<>(Arrays.<Byte> asList(bytes));
+    final Set<Byte> actual = new TreeSet<>();
+    int set = of(expected);
+    while (set != 0)
+      set = next(set, b -> actual.add(b));
+    assertEquals(expected, actual);
+
+    try {
+      next(0, b -> fail("not next: " + b));
+    } catch (NoSuchElementException e) {
+      // expected
+    }
+  }
+
+  @Test
   public void testForEach() throws Exception {
     Set<Byte> set = new TreeSet<>();
     forEach(of(1, 2, 3), set::add);
     assertEquals(toSet(of(1, 2, 3)), set);
+
+    set.clear();
+    forEach(complement(empty()), set::add);
+    assertEquals(toSet(complement(empty())), set);
   }
 
   @Test
@@ -287,5 +319,80 @@ public class SmallSetTest {
     for (int i = 0; i < 32; i++) {
       assertEquals((i * (i + 1)) / 2, stream(ofRangeClosed(0, i)).sum());
     }
+  }
+
+  @Test
+  public void testLog() throws Exception {
+    try {
+      assertEquals(0, log(0));
+    } catch (IllegalArgumentException e) {
+      // expected!
+    }
+
+    assertEquals(0, log(/* 2^0 = */1));
+    assertEquals(4, log(2 * 2 * 2 * 2));
+
+    assertEquals(4, log(1 << 4));
+
+    for (int i = 1; i < 32; i++)
+      assertEquals(i, log(1 << i));
+
+  }
+
+  @Test
+  public void testSum() throws Exception {
+    assertEquals(0, sum(empty()));
+    assertEquals(0, sum(of(0)));
+    assertEquals(1, sum(of(0, 1)));
+
+    assertEquals(17, sum(of(5, 12)));
+    assertEquals(44, sum(of(11, 30, 3)));
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(i, sum(singleton(i)));
+      for (int j = 0; j < 32; j++) {
+        if (j == i)
+          continue;
+        int set2 = of(i, j);
+        assertEquals(SmallSet.toString(set2), i + j, sum(set2));
+        for (int k = 0; k < 32; k++) {
+          if (k == i || k == j)
+            continue;
+          int set3 = of(i, j, k);
+          assertEquals(SmallSet.toString(set3), i + j + k, sum(set3));
+        }
+      }
+    }
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals("(0,..," + i + ")", i * (i + 1) / 2, sum(ofRangeClosed(0, i)));
+    }
+  }
+
+  @Test
+  public void testReduce() throws Exception {
+    assertEquals(OptionalInt.empty(), reduce(empty(), Integer::sum));
+    assertEquals(OptionalInt.empty(), reduce(singleton(5), Integer::sum));
+    assertEquals(OptionalInt.of(36), reduce(of(5, 31), Integer::sum));
+
+    assertEquals(0, reduce(empty(), 0, Integer::sum));
+    assertEquals(5, reduce(singleton(5), 0, Integer::sum));
+    assertEquals(36, reduce(of(5, 31), 0, Integer::sum));
+
+    assertEquals(sum(complement(empty())), reduce(complement(empty()), 0, Integer::sum));
+    assertEquals(sum(complement(empty())), reduce(complement(empty()), Integer::sum).getAsInt());
+
+  }
+
+  @Test
+  public void testItr() throws Exception {
+    final int set = SmallSet.ofRangeClosed(28, 31);
+    // iterate and process all values in set:
+    for (int itr = set, value = 0; itr != 0; itr >>>= 1) {
+      if ((itr & 1) != 0)
+        System.out.println(value);
+      value++;
+    }
+
   }
 }

@@ -5,10 +5,12 @@ import static java.util.Objects.requireNonNull;
 import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.PrimitiveIterator.OfInt;
+import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -18,6 +20,22 @@ import java.util.stream.IntStream.Builder;
  * <p>
  * It is recommended to import all methods with static imports so they can be used on primitive int
  * values.
+ * 
+ * <p>
+ * Iteration is possible with {@link #iterate(int)} or {@link #iterator(int)}, but it can be done
+ * faster. The following code doesn't need to create any new objects and therefore has no overhead.
+ * {@link #forEach(int, ByteConsumer)} does the same but has to execute a lambda expression.
+ * 
+ * <code><pre>
+ *   final int set = SmallSet.of(<i>???</i>)
+ *   <i>...</i>
+ *   // iterate and process all values in set:
+ *   for (int itr = set, value = 0; itr != 0; itr >>>= 1) {
+ *     if ((itr &amp; 1) != 0)
+ *       <i>process</i>(value);
+ *     value++;
+ *   }
+ * </pre></code>
  * 
  * @author Claude Martin
  *
@@ -29,10 +47,27 @@ public final class SmallSet {
 
   private static int checkRange(int i) {
     if (i > 31)
-      throw new IllegalArgumentException("i>31");
+      throw new IllegalArgumentException("out of range: i>31");
     if (i < 0)
-      throw new IllegalArgumentException("i<0");
+      throw new IllegalArgumentException("out of range: i<0");
     return i;
+  }
+
+  private static byte checkRange(byte i) {
+    if (i > 31)
+      throw new IllegalArgumentException("out of range: i>31");
+    if (i < 0)
+      throw new IllegalArgumentException("out of range: i<0");
+    return i;
+  }
+
+  private static byte numberToByte(final Number n) {
+    final double d = n.doubleValue();
+    if (d > 31d)
+      throw new IllegalArgumentException("out of range: i>31");
+    if (d < 0d)
+      throw new IllegalArgumentException("out of range: i<0");
+    return n.byteValue();
   }
 
   /**
@@ -44,7 +79,7 @@ public final class SmallSet {
   public static int of(final Iterable<? extends Number> values) {
     int set = 0;
     for (final Number n : values)
-      set |= (1 << checkRange(n.byteValue()));
+      set |= (1 << numberToByte(n));
     return set;
   }
 
@@ -56,8 +91,8 @@ public final class SmallSet {
    */
   public static int of(final byte... i) {
     int set = 0;
-    for (final int integer : i)
-      set |= (1 << checkRange(integer));
+    for (final byte b : i)
+      set |= (1 << checkRange(b));
     return set;
   }
 
@@ -188,11 +223,18 @@ public final class SmallSet {
    * throws an exception. Actions are performed in the order of iteration (ascending). Exceptions
    * thrown by the action are relayed to the caller.
    */
-  public static void forEach(final int set, final ByteConsumer consumer) {
+  public static void forEach(int set, final ByteConsumer consumer) {
     requireNonNull(consumer);
-    final ByteIterator itr = iterator(set);
-    while (itr.hasNext())
-      consumer.accept(itr.nextByte());
+    byte value = (byte) Integer.numberOfTrailingZeros(set);
+    if (set == 32)
+      return;
+    set >>>= value;
+    while (set != 0) {
+      if ((set & 1) != 0)
+        consumer.accept(value);
+      set >>>= 1;
+      value++;
+    }
   }
 
   /**
@@ -202,14 +244,8 @@ public final class SmallSet {
    */
   public static ByteIterator iterator(final int set) {
     return new ByteIterator() {
-      private int _set = set;
-      private byte next = 0;
-      {
-        while (this._set != 0 && (this._set & 1) == 0) {
-          this._set >>>= 1;
-          this.next++;
-        }
-      }
+      private byte next = (byte) Integer.numberOfTrailingZeros(set);
+      private int _set = set >>> this.next;
 
       @Override
       public boolean hasNext() {
@@ -288,38 +324,85 @@ public final class SmallSet {
   }
 
   /** String representation of the given set. */
-  public static String toString(final int set) {
+  public static String toString(int set) {
     if (set == 0)
       return "()";
     final StringJoiner sj = new StringJoiner(",", "(", ")");
-    for (final ByteIterator itr = iterator(set); itr.hasNext();)
-      sj.add(Integer.toString(itr.nextByte()));
+
+    for (byte value = 0; set != 0; value++) {
+      if ((set & 1) != 0)
+        sj.add(Byte.toString(value));
+      set >>>= 1;
+    }
+
     return sj.toString();
   }
 
   /** {@link TreeSet} of the given set. */
-  public static TreeSet<Byte> toSet(final int set) {
+  public static TreeSet<Byte> toSet(int set) {
     final TreeSet<Byte> result = new TreeSet<>();
-    for (final ByteIterator itr = iterator(set); itr.hasNext();)
-      result.add(itr.nextByte());
+    for (byte value = 0; set != 0; value++) {
+      if ((set & 1) != 0)
+        result.add(value);
+      set >>>= 1;
+    }
     return result;
   }
 
+  public static byte[] toArray(int set) {
+    final int size = size(set);
+    byte[] result = new byte[size];
+    int i = 0;
+    for (byte value = 0; set != 0; value++) {
+      if ((set & 1) != 0)
+        result[i++] = value;
+      set >>>= 1;
+    }
+    return result;
+  }
+
+  /**
+   * Remove smalles value and consume it.
+   * 
+   * <p>
+   * This can be used like this: <code><pre>
+   * int set = of(expected);
+   * while (set != 0)
+   *   set = next(set, b -&gt; actual.add(b));
+   * </pre></code>
+   * 
+   * @throw NoSuchElementException when the set is empty
+   * @see #iterate(int)
+   */
+  public static int next(final int set, ByteConsumer c) throws NoSuchElementException {
+    if (set == 0)
+      throw new NoSuchElementException("empty set");
+    byte next = (byte) Integer.numberOfTrailingZeros(set);
+    c.accept(next);
+    return set & ~(1 << next);
+  }
+
   /** {@link BitSet} of the given set. */
-  public static BitSet toBitSet(final int set) {
+  public static BitSet toBitSet(int set) {
     final BitSet result = new BitSet(32);
-    for (final ByteIterator itr = iterator(set); itr.hasNext();)
-      result.set(itr.next());
+    for (int value = 0; set != 0; value++) {
+      if ((set & 1) != 0)
+        result.set(value);
+      set >>>= 1;
+    }
     return result;
   }
 
   /** {@link EnumSet} of the given set. */
-  public static <E extends Enum<E>> EnumSet<E> toEnumSet(final int set, final Class<E> type) {
+  public static <E extends Enum<E>> EnumSet<E> toEnumSet(int set, final Class<E> type) {
     requireNonNull(type);
     final EnumSet<E> result = EnumSet.noneOf(type);
     final E[] constants = type.getEnumConstants();
-    for (final ByteIterator itr = iterator(set); itr.hasNext();)
-      result.add(constants[itr.nextByte()]);
+    for (byte value = 0; set != 0; value++) {
+      if ((set & 1) != 0)
+        result.add(constants[value]);
+      set >>>= 1;
+    }
     return result;
   }
 
@@ -341,4 +424,113 @@ public final class SmallSet {
       c >>>= 1;
     }
   }
+
+  /**
+   * Performs a reduction on the elements of this stream, using the provided identity value and an
+   * associative accumulation function, and returns the reduced value.
+   * 
+   * @see #reduce(int, IntBinaryOperator)
+   * @see #sum(int)
+   * */
+  public static int reduce(int set, final int identity, final IntBinaryOperator op) {
+    final int size = size(set);
+    if (size == 0)
+      return identity;
+    if (size == 1)
+      return op.applyAsInt(identity, log(set));
+    int value = Integer.numberOfTrailingZeros(set);
+    if (size == 2)
+      return op.applyAsInt(value, 31 - Integer.numberOfLeadingZeros(set));
+    int result = identity;
+    set >>>= value;
+    while (set != 0) {
+      if ((set & 1) != 0)
+        result = op.applyAsInt(result, value);
+      set >>>= 1;
+      value++;
+    }
+    return result;
+  }
+
+  /**
+   * Performs a reduction on the elements of this stream, using the provided associative
+   * accumulation function, and returns the reduced value or empty.
+   * 
+   * @see #reduce(int, int, IntBinaryOperator)
+   * @see #sum(int)
+   * */
+  public static OptionalInt reduce(int set, final IntBinaryOperator op) {
+    final int size = size(set);
+    if (size <= 1)
+      return OptionalInt.empty();
+
+    int result = Integer.numberOfTrailingZeros(set);
+    int value = result + 1;
+    set >>>= value;
+    while (set != 0) {
+      if ((set & 1) != 0)
+        result = op.applyAsInt(result, value);
+      value++;
+      set >>>= 1;
+    }
+    return OptionalInt.of(result);
+  }
+
+  /**
+   * The sum of all values. This returns 0 for an empty set. <br>
+   * This is equivalent to but faster than: {@code stream(set).sum()}
+   */
+  public static int sum(int set) {
+    // Both empty set and (0) return zero:
+    int size = size(set);
+    if (size == 0) {
+      return 0;
+    } else if (size == 1) {
+      // singleton: it's just the binary logarithm of set.
+      return log(set);
+    } else if (size == 2) {
+      // two values -> check leading/trailing zeroes:
+      return Integer.numberOfTrailingZeros(set) + (31 - Integer.numberOfLeadingZeros(set));
+    } else {
+      if (size > 16) // then the complement has fewer values to count:
+        return 496 - sum(complement(set));
+      // now we actually count the values:
+      int result = 0;
+      int value = Integer.numberOfTrailingZeros(set);
+      set >>>= value;
+      while (set != 0) {
+        if ((set & 1) != 0)
+          result += value;
+        value++;
+        set >>>= 1;
+      }
+      return result;
+    }
+  }
+
+  /** Binary logarithm: returns n for a given 2<sup>n</sup>. */
+  static int log(int i) {
+    if (i == 0)
+      throw new IllegalArgumentException("log(0) = -Infinity");
+    int result = 0;
+    if ((i & 0xFFFF_0000) != 0) {
+      i >>>= 16;
+      result += 16;
+    }
+    if ((i >= 0x100)) {
+      i >>>= 8;
+      result += 8;
+    }
+    if ((i >= 0x10)) {
+      i >>>= 4;
+      result += 4;
+    }
+    if ((i >= 0x4)) {
+      i >>>= 2;
+      result += 2;
+    }
+    result += (i >>> 1);
+    return result;
+  }
+
 }
