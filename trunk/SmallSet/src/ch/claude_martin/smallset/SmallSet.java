@@ -150,6 +150,11 @@ public final class SmallSet {
     return 1 << checkRange(val);
   }
 
+  /** Set with just one single value. */
+  public static int singleton(final Number n) {
+    return 1 << numberToByte(requireNonNull(n, "n"));
+  }
+
   /** Empty set. */
   public static int empty() {
     return 0;
