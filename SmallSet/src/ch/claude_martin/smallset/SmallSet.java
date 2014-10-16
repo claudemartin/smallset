@@ -1,5 +1,6 @@
 package ch.claude_martin.smallset;
 
+import static java.lang.Math.getExponent;
 import static java.util.Objects.requireNonNull;
 
 import java.util.BitSet;
@@ -10,7 +11,9 @@ import java.util.OptionalInt;
 import java.util.Random;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -253,7 +256,9 @@ public final class SmallSet {
       }
 
       @Override
-      public byte nextByte() {
+      public byte nextByte() throws NoSuchElementException {
+        if (this._set == 0)
+          throw new NoSuchElementException();
         final byte result = this.next;
         do {
           this._set >>>= 1;
@@ -274,6 +279,27 @@ public final class SmallSet {
     while (itr.hasNext())
       builder.add(itr.nextByte());
     return builder.build();
+  }
+
+  /**
+   * Fast implementation of {@link IntStream#collect} to collect values from a stream into a set.
+   * <p>
+   * This is a terminal operation.
+   * 
+   * @param stream
+   *          An IntStream, e.g. one created by {@link SmallSet#stream(int)}
+   * @return An integer representing a set of the values from the stream
+   * @throws IllegalArgumentException
+   *           if any of the values is out of range
+   */
+  public static int collect(IntStream stream) throws IllegalArgumentException {
+    class MutableInt {
+      int value = 0;
+    }
+    return stream.collect(//
+        MutableInt::new,//
+        (set, b) -> set.value = SmallSet.add(set.value, (byte) checkRange(b)), //
+        (a, b) -> a.value |= b.value).value;
   }
 
   /** Returns the number of bytes in this set (its cardinality). */
