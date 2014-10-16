@@ -60,6 +60,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -85,8 +87,8 @@ public class SmallSetTest {
     assertEquals(set, of(3, 2, 31, 2, 2, 1));
     assertEquals(set, of((byte) 1, (byte) 2, (byte) 3, (byte) 31));
 
-    set = of(new HashSet<>(Arrays.<Number> asList(1, 2f, 3.0d, (short) 4, 5L)));
-    assertEquals(of(1, 2, 3, 4, 5), set);
+    set = of(new HashSet<>(Arrays.<Number> asList(1, 2f, 3.0d, (short) 4, 5L, BigInteger.TEN)));
+    assertEquals(of(1, 2, 3, 4, 5, 10), set);
 
     for (byte i : BAD_VALUES) {
       try {
@@ -96,13 +98,13 @@ public class SmallSetTest {
         // expected
       }
     }
-    
+
     try {
-      of((List<Number>)null);
+      of((List<Number>) null);
     } catch (NullPointerException e) {
       // expected
     }
-    
+
     try {
       of(asList(Integer.valueOf(12), (Integer) null));
     } catch (NullPointerException e) {
@@ -112,7 +114,16 @@ public class SmallSetTest {
 
   @Test
   public final void testSingleton() {
-    assertEquals(of(2), singleton(2));
+    for (byte i = 0; i < 32; i++) {
+      assertEquals(of(i), singleton(i));
+      assertEquals(of(i), singleton(BigDecimal.valueOf(i)));
+      assertEquals(of(i), singleton(Double.valueOf(i)));
+      assertEquals(of(i), singleton(Long.valueOf(i)));
+      assertEquals(of(i), singleton(Integer.valueOf(i)));
+      assertEquals(of(i), singleton(Short.valueOf(i)));
+      assertEquals(of(i), singleton(Byte.valueOf(i)));
+    }
+
     for (byte i : BAD_VALUES) {
       try {
         singleton(i);
@@ -388,7 +399,7 @@ public class SmallSetTest {
     set.clear();
     forEach(complement(empty()), set::add);
     assertEquals(toSet(complement(empty())), set);
-    
+
     set.clear();
     forEach(empty(), set::add);
     assertEquals(toSet(empty()), set);
