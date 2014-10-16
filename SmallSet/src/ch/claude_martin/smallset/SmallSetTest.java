@@ -96,6 +96,18 @@ public class SmallSetTest {
         // expected
       }
     }
+    
+    try {
+      of((List<Number>)null);
+    } catch (NullPointerException e) {
+      // expected
+    }
+    
+    try {
+      of(asList(Integer.valueOf(12), (Integer) null));
+    } catch (NullPointerException e) {
+      // expected
+    }
   }
 
   @Test
@@ -105,7 +117,7 @@ public class SmallSetTest {
       try {
         singleton(i);
         fail("" + i);
-      } catch (Exception e) {
+      } catch (IllegalArgumentException e) {
         // expected
       }
     }
@@ -376,6 +388,10 @@ public class SmallSetTest {
     set.clear();
     forEach(complement(empty()), set::add);
     assertEquals(toSet(complement(empty())), set);
+    
+    set.clear();
+    forEach(empty(), set::add);
+    assertEquals(toSet(empty()), set);
   }
 
   @Test
