@@ -1,11 +1,65 @@
 package ch.claude_martin.smallset;
 
-import static ch.claude_martin.smallset.SmallSet.*;
-import static ch.claude_martin.smallset.SmallSetTest.Alphabet.*;
+import static ch.claude_martin.smallset.SmallSet.add;
+import static ch.claude_martin.smallset.SmallSet.collect;
+import static ch.claude_martin.smallset.SmallSet.complement;
+import static ch.claude_martin.smallset.SmallSet.contains;
+import static ch.claude_martin.smallset.SmallSet.empty;
+import static ch.claude_martin.smallset.SmallSet.forEach;
+import static ch.claude_martin.smallset.SmallSet.intersect;
+import static ch.claude_martin.smallset.SmallSet.isEmpty;
+import static ch.claude_martin.smallset.SmallSet.iterate;
+import static ch.claude_martin.smallset.SmallSet.iterator;
+import static ch.claude_martin.smallset.SmallSet.log;
+import static ch.claude_martin.smallset.SmallSet.minus;
+import static ch.claude_martin.smallset.SmallSet.next;
+import static ch.claude_martin.smallset.SmallSet.of;
+import static ch.claude_martin.smallset.SmallSet.ofRange;
+import static ch.claude_martin.smallset.SmallSet.ofRangeClosed;
+import static ch.claude_martin.smallset.SmallSet.random;
+import static ch.claude_martin.smallset.SmallSet.reduce;
+import static ch.claude_martin.smallset.SmallSet.remove;
+import static ch.claude_martin.smallset.SmallSet.singleton;
+import static ch.claude_martin.smallset.SmallSet.size;
+import static ch.claude_martin.smallset.SmallSet.stream;
+import static ch.claude_martin.smallset.SmallSet.sum;
+import static ch.claude_martin.smallset.SmallSet.toArray;
+import static ch.claude_martin.smallset.SmallSet.toEnumSet;
+import static ch.claude_martin.smallset.SmallSet.toSet;
+import static ch.claude_martin.smallset.SmallSet.union;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.A;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.B;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.C;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.D;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.E;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.F;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.G;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.H;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.I;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.J;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.K;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.L;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.M;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.N;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.O;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.P;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.Q;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.R;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.S;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.T;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.U;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.V;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.W;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.X;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.Y;
+import static ch.claude_martin.smallset.SmallSetTest.Alphabet.Z;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -16,6 +70,7 @@ import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.IntStream;
 
 import org.junit.Test;
 
@@ -126,11 +181,19 @@ public class SmallSetTest {
 
   @Test
   public final void testIterator() {
+    final List<Byte> bytes = asList(new Byte[] { 1, 5, 10 });
     final Set<Byte> set = new TreeSet<>();
-    final ByteIterator itr = iterator(of(1, 5, 10));
+    final ByteIterator itr = iterator(of(bytes));
     while (itr.hasNext())
       set.add(itr.next());
-    assertEquals(set, new TreeSet<>(asList((byte) 1, (byte) 5, (byte) 10)));
+    assertFalse(itr.hasNext());
+    try {
+      itr.next();
+    } catch (NoSuchElementException e) {
+      // expected!
+    }
+    assertFalse(itr.hasNext());
+    assertEquals(set, new TreeSet<>(bytes));
   }
 
   @Test
@@ -139,6 +202,7 @@ public class SmallSetTest {
     assertEquals(1, size(singleton(0)));
     assertEquals(1, size(singleton(5)));
     assertEquals(4, size(of(5, 23, 4, 7)));
+    assertEquals(32, size(complement(empty())));
   }
 
   @Test
@@ -316,8 +380,40 @@ public class SmallSetTest {
 
   @Test
   public void testStream() throws Exception {
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32; i++)
       assertEquals((i * (i + 1)) / 2, stream(ofRangeClosed(0, i)).sum());
+
+    {
+      final TreeSet<Integer> by5 = stream(complement(empty())).filter(x -> x % 5 == 0)//
+          .collect(TreeSet::new, TreeSet::add, TreeSet::addAll);
+      assertEquals(new TreeSet<>(asList(0, 5, 10, 15, 20, 25, 30)), by5);
+    }
+  }
+
+  @Test
+  public void testCollect() throws Exception {
+    { // sequential [ x | 10 divides x ]:
+      final int by10 = collect(stream(complement(empty())).filter(x -> x % 10 == 0));
+      assertEquals(of(asList(0, 10, 20, 30)), by10);
+    }
+
+    { // parallel [ x | x is even ]:
+      int expected = empty();
+      for (byte i = 0; i < 32; i += 2)
+        expected = add(expected, i);
+
+      for (int i = 0; i < 10; i++) {
+        final int actual = collect(stream(complement(empty())).parallel().filter(x -> x % 2 == 0));
+        assertEquals(expected, actual);
+      }
+    }
+
+    for (final Byte bad : BAD_VALUES) {
+      try {
+        collect(IntStream.of(bad));
+      } catch (IllegalArgumentException e) {
+        // Expected
+      }
     }
   }
 
@@ -331,8 +427,6 @@ public class SmallSetTest {
 
     assertEquals(0, log(/* 2^0 = */1));
     assertEquals(4, log(2 * 2 * 2 * 2));
-
-    assertEquals(4, log(1 << 4));
 
     for (int i = 1; i < 32; i++)
       assertEquals(i, log(1 << i));
@@ -384,15 +478,4 @@ public class SmallSetTest {
 
   }
 
-  @Test
-  public void testItr() throws Exception {
-    final int set = SmallSet.ofRangeClosed(28, 31);
-    // iterate and process all values in set:
-    for (int itr = set, value = 0; itr != 0; itr >>>= 1) {
-      if ((itr & 1) != 0)
-        System.out.println(value);
-      value++;
-    }
-
-  }
 }
