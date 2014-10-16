@@ -80,9 +80,12 @@ public final class SmallSet {
    *          Sequence of numbers
    */
   public static int of(final Iterable<? extends Number> values) {
+    requireNonNull(values, "values");
     int set = 0;
-    for (final Number n : values)
+    for (final Number n : values) {
+      requireNonNull(n, "values must not contain null");
       set |= (1 << numberToByte(n));
+    }
     return set;
   }
 
@@ -117,9 +120,12 @@ public final class SmallSet {
    */
   @SafeVarargs
   public static <E extends Enum<E>> int of(final E... enums) {
+    requireNonNull(enums, "enums");
     int set = 0;
-    for (final Enum<?> e : enums)
+    for (final Enum<?> e : enums) {
+      requireNonNull(enums, "enums must not contain null");
       set |= (1 << checkRange(e.ordinal()));
+    }
     return set;
   }
 
@@ -127,6 +133,7 @@ public final class SmallSet {
    * Creates set of enum values, using the ordinal of each element.
    */
   public static int of(EnumSet<?> enumset) {
+    requireNonNull(enumset, "enumset");
     int set = 0;
     for (final Enum<?> e : enumset)
       set |= (1 << checkRange(e.ordinal()));
@@ -227,10 +234,10 @@ public final class SmallSet {
    * thrown by the action are relayed to the caller.
    */
   public static void forEach(int set, final ByteConsumer consumer) {
-    requireNonNull(consumer);
-    byte value = (byte) Integer.numberOfTrailingZeros(set);
-    if (set == 32)
+    requireNonNull(consumer, "consumer");
+    if (set == 0)
       return;
+    byte value = (byte) Integer.numberOfTrailingZeros(set);
     set >>>= value;
     while (set != 0) {
       if ((set & 1) != 0)
@@ -293,7 +300,8 @@ public final class SmallSet {
    *           if any of the values is out of range
    */
   public static int collect(IntStream stream) throws IllegalArgumentException {
-    class MutableInt {
+    requireNonNull(stream, "stream");
+    final class MutableInt {
       int value = 0;
     }
     return stream.collect(//
@@ -400,11 +408,12 @@ public final class SmallSet {
    * @throw NoSuchElementException when the set is empty
    * @see #iterate(int)
    */
-  public static int next(final int set, ByteConsumer c) throws NoSuchElementException {
+  public static int next(final int set, ByteConsumer consumer) throws NoSuchElementException {
+    requireNonNull(consumer, "consumer");
     if (set == 0)
       throw new NoSuchElementException("empty set");
     byte next = (byte) Integer.numberOfTrailingZeros(set);
-    c.accept(next);
+    consumer.accept(next);
     return set & ~(1 << next);
   }
 
@@ -421,7 +430,7 @@ public final class SmallSet {
 
   /** {@link EnumSet} of the given set. */
   public static <E extends Enum<E>> EnumSet<E> toEnumSet(int set, final Class<E> type) {
-    requireNonNull(type);
+    requireNonNull(type, "type");
     final EnumSet<E> result = EnumSet.noneOf(type);
     final E[] constants = type.getEnumConstants();
     for (byte value = 0; set != 0; value++) {
@@ -434,7 +443,7 @@ public final class SmallSet {
 
   /** Return any of the bytes. */
   public static byte random(final int set, final Random rng) {
-    requireNonNull(rng, "nrg");
+    requireNonNull(rng, "rng");
     if (set == 0)
       throw new IllegalStateException("SmallSet is empty!");
     int r = rng.nextInt(size(set));
@@ -459,6 +468,7 @@ public final class SmallSet {
    * @see #sum(int)
    * */
   public static int reduce(int set, final int identity, final IntBinaryOperator op) {
+    requireNonNull(op, "op");
     final int size = size(set);
     if (size == 0)
       return identity;
@@ -486,6 +496,7 @@ public final class SmallSet {
    * @see #sum(int)
    * */
   public static OptionalInt reduce(int set, final IntBinaryOperator op) {
+    requireNonNull(op, "op");
     final int size = size(set);
     if (size <= 1)
       return OptionalInt.empty();
