@@ -66,10 +66,16 @@ public final class SmallSet {
 
   private static byte numberToByte(final Number n) {
     final double d = n.doubleValue();
+
+    if (Double.isNaN(d))
+      throw new IllegalArgumentException("not a number");
+    if (Double.isInfinite(d))
+      throw new IllegalArgumentException("infinite");
     if (d > 31d)
       throw new IllegalArgumentException("out of range: i>31");
     if (d < 0d)
       throw new IllegalArgumentException("out of range: i<0");
+
     return n.byteValue();
   }
 

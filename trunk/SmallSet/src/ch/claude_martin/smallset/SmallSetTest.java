@@ -101,14 +101,19 @@ public class SmallSetTest {
 
     try {
       of((List<Number>) null);
+      fail("of(null)");
     } catch (NullPointerException e) {
       // expected
     }
 
-    try {
-      of(asList(Integer.valueOf(12), (Integer) null));
-    } catch (NullPointerException e) {
-      // expected
+    for (Double d : asList((Double) null, Double.NaN, Double.NEGATIVE_INFINITY,
+        Double.POSITIVE_INFINITY)) {
+      try {
+        of(asList(d));
+        fail("of([" + d + "])");
+      } catch (NullPointerException | IllegalArgumentException e) {
+        // expected
+      }
     }
   }
 
@@ -131,7 +136,28 @@ public class SmallSetTest {
       } catch (IllegalArgumentException e) {
         // expected
       }
+      try {
+        singleton(BigDecimal.valueOf(i));
+        fail("BigDecimal of " + i);
+      } catch (IllegalArgumentException e) {
+        // expected
+      }
     }
+
+    try {
+      singleton(Double.NaN);
+      fail("NaN");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      singleton(Double.POSITIVE_INFINITY);
+      fail("POSITIVE_INFINITY");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
   }
 
   @Test
@@ -212,6 +238,7 @@ public class SmallSetTest {
     assertFalse(itr.hasNext());
     try {
       itr.next();
+      fail("unexpected 'next'");
     } catch (NoSuchElementException e) {
       // expected!
     }
@@ -385,6 +412,7 @@ public class SmallSetTest {
 
     try {
       next(0, b -> fail("not next: " + b));
+      fail("next(0, ...)");
     } catch (NoSuchElementException e) {
       // expected
     }
@@ -438,6 +466,7 @@ public class SmallSetTest {
     for (final Byte bad : BAD_VALUES) {
       try {
         collect(IntStream.of(bad));
+        fail("" + bad);
       } catch (IllegalArgumentException e) {
         // Expected
       }
@@ -448,6 +477,7 @@ public class SmallSetTest {
   public void testLog() throws Exception {
     try {
       assertEquals(0, log(0));
+      fail("log(0)");
     } catch (IllegalArgumentException e) {
       // expected!
     }
