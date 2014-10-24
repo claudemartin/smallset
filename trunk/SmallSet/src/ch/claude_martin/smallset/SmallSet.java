@@ -30,6 +30,11 @@ import java.util.stream.IntStream.Builder;
  *   }
  * </pre></code>
  * 
+ * <p>
+ * In most cases the type int is used for the set (32 bits as a bit field) and byte is the type of
+ * the elements. Since there is no <i>OptionalByte</i> in java some methods return
+ * {@link OptionalInt} instead.
+ * 
  * @author Claude Martin
  *
  */
@@ -86,7 +91,7 @@ public final class SmallSet {
   }
 
   /**
-   * Creates a SmallSet from bytes.
+   * Creates a set from byte elements.
    * 
    * @param i
    *          Sequence of bytes.
@@ -99,7 +104,7 @@ public final class SmallSet {
   }
 
   /**
-   * Creates a SmallSet from integers.
+   * Creates a set from int elements.
    * 
    * @param i
    *          Sequence of integers.
@@ -205,7 +210,7 @@ public final class SmallSet {
     return a & b;
   }
 
-  /** Bytes of b removed from a: a \ b = intersect(a , complement(b)). */
+  /** Elements of b removed from a: a \ b = intersect(a , complement(b)). */
   public static int minus(final int a, final int b) {
     return a & ~b;
   }
@@ -311,7 +316,7 @@ public final class SmallSet {
         (a, b) -> a.value |= b.value).value;
   }
 
-  /** Returns the number of bytes in this set (its cardinality). */
+  /** Returns the number of elements in this set (its cardinality). */
   public static int size(final int set) {
     return Integer.bitCount(set);
   }
@@ -499,8 +504,10 @@ public final class SmallSet {
   public static OptionalInt reduce(int set, final IntBinaryOperator op) {
     requireNonNull(op, "op");
     final int size = size(set);
-    if (size <= 1)
+    if (size == 0)
       return OptionalInt.empty();
+    if (size == 1)
+      return OptionalInt.of(log(set));
 
     int result = Integer.numberOfTrailingZeros(set);
     int value = result + 1;
@@ -546,7 +553,33 @@ public final class SmallSet {
     }
   }
 
-  /** Binary logarithm: returns n for a given 2<sup>n</sup>. */
+  /**
+   * Returns an {@code OptionalInt} describing the minimum element of the given set, or an empty
+   * optional if the set is empty. This is equivalent to <code>reduce(set, Integer::min)</code>.
+   */
+  public static OptionalInt min(int set) {
+    int result = Integer.numberOfTrailingZeros(set);
+    if (result == 32)
+      return OptionalInt.empty();
+    return OptionalInt.of(result);
+  }
+
+  /**
+   * Returns an {@code OptionalInt} describing the maximum element of the given set, or an empty
+   * optional if the set is empty. This is equivalent to <code>reduce(set, Integer::max)</code>.
+   */
+  public static OptionalInt max(int set) {
+    int result = 31 - Integer.numberOfLeadingZeros(set);
+    if (result == -1)
+      return OptionalInt.empty();
+    return OptionalInt.of(result);
+  }
+
+  /**
+   * Binary logarithm: returns n for a given 2<sup>n</sup>.
+   * 
+   * This can be used to get a value from a singleton set.
+   */
   static int log(int i) {
     if (i == 0)
       throw new IllegalArgumentException("log(0) = -Infinity");
