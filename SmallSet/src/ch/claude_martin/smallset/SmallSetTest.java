@@ -457,9 +457,28 @@ public class SmallSetTest {
   }
 
   @Test
+  public void testMinMax() throws Exception {
+    assertEquals(OptionalInt.empty(), max(0));
+    assertEquals(OptionalInt.empty(), min(0));
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(OptionalInt.of(i), max(singleton(i)));
+      assertEquals(OptionalInt.of(i), min(singleton(i)));
+    }
+
+    for (long x = Integer.MIN_VALUE; x <= Integer.MAX_VALUE; x += 104729L) {
+      // x is never 0
+      final int set = (int) x;
+      final IntSummaryStatistics stats = stream(set).summaryStatistics();
+      assertEquals(stats.getMax(), max(set).getAsInt());
+      assertEquals(stats.getMin(), min(set).getAsInt());
+    }
+  }
+
+  @Test
   public void testReduce() throws Exception {
     assertEquals(OptionalInt.empty(), reduce(empty(), Integer::sum));
-    assertEquals(OptionalInt.empty(), reduce(singleton(5), Integer::sum));
+    assertEquals(OptionalInt.of(5), reduce(singleton(5), Integer::sum));
     assertEquals(OptionalInt.of(36), reduce(of(5, 31), Integer::sum));
 
     assertEquals(0, reduce(empty(), 0, Integer::sum));
