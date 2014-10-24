@@ -1,6 +1,7 @@
 package ch.claude_martin.smallset;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 /**
@@ -20,7 +21,7 @@ public interface ByteConsumer {
    * @param value
    *          the input argument
    */
-  void accept(byte value);
+  void accept(final byte value);
 
   /**
    * Returns a composed {@code ByteConsumer} that performs, in sequence, this operation followed by
@@ -30,14 +31,14 @@ public interface ByteConsumer {
    *
    * @param after
    *          the operation to perform after this operation
-   * @return a composed {@code ByteConsumer} that performs in sequence this operation followed by the
-   *         {@code after} operation
+   * @return a composed {@code ByteConsumer} that performs in sequence this operation followed by
+   *         the {@code after} operation
    * @throws NullPointerException
    *           if {@code after} is null
    */
-  default ByteConsumer andThen(IntConsumer after) {
+  default ByteConsumer andThen(final IntConsumer after) {
     Objects.requireNonNull(after);
-    return (byte b) -> {
+    return (final byte b) -> {
       accept(b);
       after.accept(b);
     };

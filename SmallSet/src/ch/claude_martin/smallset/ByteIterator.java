@@ -1,6 +1,5 @@
 package ch.claude_martin.smallset;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
@@ -19,6 +18,7 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
    */
   byte nextByte();
 
+  @Override
   boolean hasNext();
 
   /**
@@ -31,7 +31,8 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
    * @throws NullPointerException
    *           if the specified action is null
    */
-  default void forEachRemaining(ByteConsumer action) {
+  @Override
+  default void forEachRemaining(final ByteConsumer action) {
     Objects.requireNonNull(action);
     while (hasNext())
       action.accept(nextByte());
@@ -57,7 +58,7 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
    *           {@code ByteConsumer}, and then passed to {@link #forEachRemaining}.
    */
   @Override
-  default void forEachRemaining(Consumer<? super Byte> action) {
+  default void forEachRemaining(final Consumer<? super Byte> action) {
     if (action instanceof ByteConsumer)
       forEachRemaining((ByteConsumer) action);
     else {

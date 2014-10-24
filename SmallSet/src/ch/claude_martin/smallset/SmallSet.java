@@ -1,19 +1,9 @@
 package ch.claude_martin.smallset;
 
-import static java.lang.Math.getExponent;
 import static java.util.Objects.requireNonNull;
 
-import java.util.BitSet;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.OptionalInt;
-import java.util.Random;
-import java.util.StringJoiner;
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.function.IntBinaryOperator;
-import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -48,7 +38,7 @@ public final class SmallSet {
   private SmallSet() {
   }
 
-  private static int checkRange(int i) {
+  private static int checkRange(final int i) {
     if (i > 31)
       throw new IllegalArgumentException("out of range: i>31");
     if (i < 0)
@@ -56,7 +46,7 @@ public final class SmallSet {
     return i;
   }
 
-  private static byte checkRange(byte i) {
+  private static byte checkRange(final byte i) {
     if (i > 31)
       throw new IllegalArgumentException("out of range: i>31");
     if (i < 0)
@@ -138,7 +128,7 @@ public final class SmallSet {
   /**
    * Creates set of enum values, using the ordinal of each element.
    */
-  public static int of(EnumSet<?> enumset) {
+  public static int of(final EnumSet<?> enumset) {
     requireNonNull(enumset, "enumset");
     int set = 0;
     for (final Enum<?> e : enumset)
@@ -310,7 +300,7 @@ public final class SmallSet {
    * @throws IllegalArgumentException
    *           if any of the values is out of range
    */
-  public static int collect(IntStream stream) throws IllegalArgumentException {
+  public static int collect(final IntStream stream) throws IllegalArgumentException {
     requireNonNull(stream, "stream");
     final class MutableInt {
       int value = 0;
@@ -396,7 +386,7 @@ public final class SmallSet {
 
   public static byte[] toArray(int set) {
     final int size = size(set);
-    byte[] result = new byte[size];
+    final byte[] result = new byte[size];
     int i = 0;
     for (byte value = 0; set != 0; value++) {
       if ((set & 1) != 0)
@@ -419,11 +409,11 @@ public final class SmallSet {
    * @throw NoSuchElementException when the set is empty
    * @see #iterate(int)
    */
-  public static int next(final int set, ByteConsumer consumer) throws NoSuchElementException {
+  public static int next(final int set, final ByteConsumer consumer) throws NoSuchElementException {
     requireNonNull(consumer, "consumer");
     if (set == 0)
       throw new NoSuchElementException("empty set");
-    byte next = (byte) Integer.numberOfTrailingZeros(set);
+    final byte next = (byte) Integer.numberOfTrailingZeros(set);
     consumer.accept(next);
     return set & ~(1 << next);
   }
@@ -530,7 +520,7 @@ public final class SmallSet {
    */
   public static int sum(int set) {
     // Both empty set and (0) return zero:
-    int size = size(set);
+    final int size = size(set);
     if (size == 0) {
       return 0;
     } else if (size == 1) {
