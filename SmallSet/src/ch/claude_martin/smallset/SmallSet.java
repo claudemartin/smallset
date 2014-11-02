@@ -3,8 +3,10 @@ package ch.claude_martin.smallset;
 import static java.util.Objects.requireNonNull;
 
 import java.util.*;
+import java.util.PrimitiveIterator.OfInt;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 import java.util.stream.IntStream.Builder;
 
 /**
@@ -151,6 +153,11 @@ public final class SmallSet {
     return 1 << checkRange(val);
   }
 
+  /** Set with just one single element. */
+  public static int singleton(final Enum<?> element) {
+    return 1 << checkRange(requireNonNull(element, "element").ordinal());
+  }
+
   /** Set with just one single value. */
   public static int singleton(final Number n) {
     return 1 << numberToByte(requireNonNull(n, "n"));
@@ -162,7 +169,7 @@ public final class SmallSet {
   }
 
   /**
-   * Tests if element is in the given set.
+   * Tests if an element is in the given set.
    * 
    * @param set
    *          A set
@@ -172,6 +179,58 @@ public final class SmallSet {
    */
   public static boolean contains(final int set, final byte element) {
     return (set & (1 << checkRange(element))) != 0;
+  }
+
+  /**
+   * Tests if an element is in the given set.
+   * 
+   * @param set
+   *          A set
+   * @param element
+   *          An element
+   * @return <code>element ∈ set</code>
+   */
+  public static boolean contains(final int set, final Enum<?> element) {
+    return (set & (1 << checkRange(requireNonNull(element, "element").ordinal()))) != 0;
+  }
+
+  /**
+   * Checks if the given set contains all elements.
+   * 
+   * @param set
+   *          A set
+   * @param elements
+   *          Elements to be checked for containment in given set
+   */
+  public static boolean containsAll(final int set, final Collection<? extends Number> elements) {
+    final int mask = of(requireNonNull(elements, "elements"));
+    return (set & mask) == mask;
+  }
+
+  /**
+   * Checks if the given set contains all elements.
+   * 
+   * @param set
+   *          A set
+   * @param elements
+   *          Elements to be checked for containment in given set
+   */
+  public static boolean containsAll(final int set, final EnumSet<?> elements) {
+    final int mask = of(requireNonNull(elements, "elements"));
+    return (set & mask) == mask;
+  }
+
+  /**
+   * Checks if the given set contains all elements.
+   * 
+   * @param set
+   *          A set
+   * @param elements
+   *          Elements to be checked for containment in given set
+   */
+  public static boolean containsAll(final int set, final byte... elements) {
+    final int mask = of(requireNonNull(elements, "elements"));
+    return (set & mask) == mask;
   }
 
   /**
@@ -188,6 +247,19 @@ public final class SmallSet {
   }
 
   /**
+   * Adds an enum element to the set.
+   * 
+   * @param set
+   *          A set
+   * @param element
+   *          An element
+   * @return <code>set ∪ {element.ordinal()}</code>
+   */
+  public static int add(final int set, final Enum<?> element) {
+    return set | (1 << checkRange(requireNonNull(element, "element").ordinal()));
+  }
+
+  /**
    * Removes an element from a set.
    * 
    * @param set
@@ -198,6 +270,19 @@ public final class SmallSet {
    */
   public static int remove(final int set, final byte element) {
     return set & ~(1 << checkRange(element));
+  }
+
+  /**
+   * Removes an element from a set.
+   * 
+   * @param set
+   *          A set
+   * @param element
+   *          An element
+   * @return <code>set \ {element.ordinal()}</code>
+   */
+  public static int remove(final int set, final Enum<?> element) {
+    return set & ~(1 << checkRange(requireNonNull(element, "element").ordinal()));
   }
 
   /** Union of two sets. */
@@ -282,16 +367,31 @@ public final class SmallSet {
     };
   }
 
+  /** An iterator of the given set that returns integer. */
+  public static OfInt intIterator(int set) {
+    return new OfInt() {
+      private ByteIterator itr = iterator(set);
+
+      @Override
+      public boolean hasNext() {
+        return this.itr.hasNext();
+      }
+
+      @Override
+      public int nextInt() throws NoSuchElementException {
+        return this.itr.nextByte();
+      }
+    };
+  }
+
   /**
-   * Creates an {@link IntStream} for the given set. Note that the stream isn't lazy, but contains
-   * no more than 32 integers.
+   * Creates an {@link IntStream} for the given set.
    */
   public static IntStream stream(final int set) {
-    final ByteIterator itr = iterator(set);
-    final Builder builder = IntStream.builder();
-    while (itr.hasNext())
-      builder.add(itr.nextByte());
-    return builder.build();
+    return StreamSupport.intStream(
+        () -> Spliterators.spliterator(intIterator(set), size(set), Spliterator.ORDERED
+            | Spliterator.DISTINCT | Spliterator.SORTED), Spliterator.SIZED | Spliterator.SUBSIZED
+            | Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED, false);
   }
 
   /**
@@ -336,8 +436,8 @@ public final class SmallSet {
    * @return <code>SmallSet.of(j, ... , k-1)</code>
    */
   public static int ofRange(final int a, final int z) {
-    if (checkRange(a) > z)
-      throw new IllegalArgumentException("z<a");
+    if (checkRange(a) >= z)
+      throw new IllegalArgumentException("z<=a");
     checkRange(z - 1);
     int i = 0;
     for (int x = a; x < z; x++)
@@ -447,11 +547,16 @@ public final class SmallSet {
     return result;
   }
 
-  /** Return any of the bytes. */
+  /**
+   * Returns any of the elements.
+   * 
+   * @throws IllegalArgumentException
+   *           if set is empty (0)
+   */
   public static byte random(final int set, final Random rng) {
     requireNonNull(rng, "rng");
     if (set == 0)
-      throw new IllegalStateException("SmallSet is empty!");
+      throw new IllegalArgumentException("set must not be empty.");
     int r = rng.nextInt(size(set));
     int c = set;
     byte result = -1;

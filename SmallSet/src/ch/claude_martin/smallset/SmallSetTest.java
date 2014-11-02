@@ -8,6 +8,7 @@ import static org.junit.Assert.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.junit.Test;
@@ -118,6 +119,63 @@ public class SmallSetTest {
         // expected
       }
     }
+    {
+      EnumSet<Alphabet> bert = EnumSet.of(B, E, R, T);
+      for (Enum<Alphabet> e : bert)
+        assertEquals(bert.contains(e), contains(of(bert), e));
+
+      try {
+        contains(of(1, 2, 3), null);
+        fail("contains( , null)");
+      } catch (NullPointerException e) {
+        // excepted
+      }
+    }
+    
+    try {
+      contains(set, null);
+      fail();
+    } catch (NullPointerException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testContainsAll() throws Exception {
+
+    final int oneTo5 = of(1, 2, 3, 4, 5);
+    assertTrue(containsAll(oneTo5, toSet(oneTo5)));
+    assertTrue(containsAll(oneTo5, (byte) 3, (byte) 5));
+    assertFalse(containsAll(oneTo5, (byte) 3, (byte) 30));
+
+    final EnumSet<Alphabet> alphabet = EnumSet.allOf(Alphabet.class);
+    final int az = of(alphabet);
+    assertTrue(containsAll(az, alphabet));
+    assertTrue(containsAll(az, alphabet.stream().map(Enum::ordinal).collect(Collectors.toList())));
+
+    for (Alphabet a1 : alphabet) {
+      assertTrue(containsAll(az, EnumSet.of(a1)));
+      assertTrue(containsAll(az, Arrays.asList(a1.ordinal())));
+      for (Alphabet a2 : alphabet) {
+        assertTrue(containsAll(az, EnumSet.of(a1, a2)));
+        assertTrue(containsAll(az, Arrays.asList(a1.ordinal(), a2.ordinal())));
+      }
+      assertFalse(containsAll(empty(), EnumSet.of(a1)));
+      assertFalse(containsAll(empty(), Arrays.asList(a1.ordinal())));
+    }
+
+    try {
+      containsAll(of(1, 2, 3), (EnumSet<?>) null);
+      fail("contains( , null)");
+    } catch (NullPointerException e) {
+      // excepted
+    }
+    try {
+      containsAll(of(1, 2, 3), (List<Integer>) null);
+      fail("contains( , null)");
+    } catch (NullPointerException e) {
+      // excepted
+    }
   }
 
   @Test
@@ -138,6 +196,24 @@ public class SmallSetTest {
         // expected
       }
     }
+
+    {
+      final EnumSet<Alphabet> abc = EnumSet.allOf(Alphabet.class);
+      set = empty();
+
+      for (Enum<Alphabet> e : abc) {
+        final int tmp = set;
+        set = add(set, e);
+        assertEquals(union(tmp, singleton(e)), set);
+      }
+      assertEquals(of(abc), set);
+      try {
+        add(set, (Enum<?>) null);
+      } catch (NullPointerException e) {
+        // expected
+      }
+    }
+
   }
 
   @Test
@@ -162,6 +238,24 @@ public class SmallSetTest {
         // expected
       }
     }
+
+    {
+      final EnumSet<Alphabet> abc = EnumSet.allOf(Alphabet.class);
+      set = of(abc);
+
+      for (Enum<Alphabet> e : abc) {
+        final int tmp = set;
+        set = remove(set, e);
+        assertEquals(minus(tmp, singleton(e)), set);
+      }
+      assertEquals(empty(), set);
+      try {
+        add(set, (Enum<?>) null);
+      } catch (NullPointerException e) {
+        // expected
+      }
+    }
+
   }
 
   @Test
@@ -209,7 +303,21 @@ public class SmallSetTest {
     try {
       ofRange(0, 0);
       fail("0,0");
-    } catch (Exception e) {
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      ofRange(5, 5);
+      fail("5,5");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+
+    try {
+      ofRange(5, 2);
+      fail("5,2");
+    } catch (IllegalArgumentException e) {
       // expected
     }
 
@@ -231,11 +339,19 @@ public class SmallSetTest {
 
     assertEquals(-1, ofRangeClosed(0, 31));
 
-    assertEquals(of(0), ofRangeClosed(0, 0));
+    for (int i = 0; i < 32; i++)
+      assertEquals(of(i), ofRangeClosed(i, i));
+
+    try {
+      ofRangeClosed(5, 2);
+      fail("5,2");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
 
     for (Byte b : BAD_VALUES) {
       try {
-        ofRange(b, (byte) 32);
+        ofRangeClosed(b, (byte) 32);
         fail("" + b);
       } catch (Exception e) {
         // expected
@@ -287,6 +403,20 @@ public class SmallSetTest {
       assertTrue(contains(set, random(set, rng)));
 
     assertEquals(0, random(singleton(0), rng));
+
+    try {
+      random(empty(), rng);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+    
+    try {
+      random(of(5), null);
+      fail();
+    } catch (NullPointerException e) {
+      // expected
+    }
   }
 
   public static enum Alphabet {
@@ -383,8 +513,9 @@ public class SmallSetTest {
 
   @Test
   public void testCollect() throws Exception {
+    final int all = complement(empty()); // = -1
     { // sequential [ x | 10 divides x ]:
-      final int by10 = collect(stream(complement(empty())).filter(x -> x % 10 == 0));
+      final int by10 = collect(stream(all).filter(x -> x % 10 == 0));
       assertEquals(of(asList(0, 10, 20, 30)), by10);
     }
 
@@ -394,7 +525,9 @@ public class SmallSetTest {
         expected = add(expected, i);
 
       for (int i = 0; i < 10; i++) {
-        final int actual = collect(stream(complement(empty())).parallel().filter(x -> x % 2 == 0));
+        // This is much slower than sequential processing, but this
+        // tests if parallel works properly.
+        final int actual = collect(stream(all).parallel().filter(x -> x % 2 == 0));
         assertEquals(expected, actual);
       }
     }
@@ -488,6 +621,26 @@ public class SmallSetTest {
     assertEquals(sum(complement(empty())), reduce(complement(empty()), 0, Integer::sum));
     assertEquals(sum(complement(empty())), reduce(complement(empty()), Integer::sum).getAsInt());
 
+  }
+
+  @Test
+  public void testToBitSet() throws Exception {
+    final Random rng = new Random();
+    final BitSet bitset = new BitSet();
+    int set = empty();
+    // Test empty:
+    assertEquals(bitset, toBitSet(set));
+    // Test nonempty:
+    for (int i = 0; i < 64; i++) {
+      final byte value = (byte) rng.nextInt(32);
+      set = add(set, value);
+      bitset.set(value);
+      assertEquals(bitset, toBitSet(set));
+    }
+    // Test all:
+    bitset.set(0, 32, true);
+    set = -1;
+    assertEquals(bitset, toBitSet(set));
   }
 
 }
