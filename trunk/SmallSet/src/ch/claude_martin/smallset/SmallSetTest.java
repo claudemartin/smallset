@@ -9,16 +9,28 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.function.Consumer;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressWarnings("static-method")
 public class SmallSetTest {
+
+  /** @see #testCollect() */
+  @BeforeClass
+  public static void before() {
+    // This leads to optimization, which reduces the overall time of the test run.
+    if (Runtime.getRuntime().availableProcessors() > 1) {
+      ForkJoinPool.commonPool().execute(() -> {
+        collect(stream(complement(empty())).parallel().filter(x -> x % 2 == 0));
+      });
+    }
+  }
 
   private static final List<Byte> BAD_VALUES = asList((byte) -1, (byte) 32);
 
@@ -558,10 +570,9 @@ public class SmallSetTest {
       int expected = empty();
       for (byte i = 0; i < 32; i += 2)
         expected = add(expected, i);
-
-      for (int i = 0; i < 10; i++) {
-        // This is much slower than sequential processing, but this
-        // tests if parallel works properly.
+      for (int i = 0; i < 100; i++) {
+        // The first run is very slow, then it gets optimized.
+        // before() does that first run so this will be faster.
         final int actual = collect(stream(all).parallel().filter(x -> x % 2 == 0));
         assertEquals(expected, actual);
       }
@@ -619,20 +630,29 @@ public class SmallSetTest {
 
   @Test
   public void testMinMax() throws Exception {
-    assertEquals(OptionalInt.empty(), max(0));
-    assertEquals(OptionalInt.empty(), min(0));
+    assertEquals(OptionalInt.empty(), max(empty()));
+    assertEquals(OptionalInt.empty(), min(empty()));
 
     for (int i = 0; i < 32; i++) {
       assertEquals(OptionalInt.of(i), max(singleton(i)));
       assertEquals(OptionalInt.of(i), min(singleton(i)));
     }
 
-    for (long x = Integer.MIN_VALUE; x <= Integer.MAX_VALUE; x += 104729L) {
-      // x is never 0
-      final int set = (int) x;
-      final IntSummaryStatistics stats = stream(set).summaryStatistics();
-      assertEquals(stats.getMax(), max(set).getAsInt());
-      assertEquals(stats.getMin(), min(set).getAsInt());
+    assertEquals(OptionalInt.of(0), min(complement(empty())));
+    assertEquals(OptionalInt.of(31), max(complement(empty())));
+
+    {
+      final Random rng = new Random(System.nanoTime());
+      int set = empty();
+      while (true) {
+        final IntSummaryStatistics stats = stream(set).summaryStatistics();
+        assertEquals(stats.getMax(), max(set).orElse(Integer.MIN_VALUE));
+        assertEquals(stats.getMin(), min(set).orElse(Integer.MAX_VALUE));
+        final int complement = complement(set);
+        if (complement == 0)
+          break;
+        set = add(set, random(complement, rng));
+      }
     }
   }
 
