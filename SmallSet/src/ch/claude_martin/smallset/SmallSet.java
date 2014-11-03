@@ -7,7 +7,6 @@ import java.util.PrimitiveIterator.OfInt;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
-import java.util.stream.IntStream.Builder;
 
 /**
  * Utility methods for sets of small integers (bytes in the range of 0 to 31), represented as bit
@@ -420,7 +419,7 @@ public final class SmallSet {
   public static int collect(final IntStream stream) throws IllegalArgumentException {
     requireNonNull(stream, "stream");
     final class MutableInt {
-      int value = 0;
+      int value = empty();
     }
     return stream.collect(//
         MutableInt::new,//
