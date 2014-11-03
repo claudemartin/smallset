@@ -8,6 +8,10 @@ import static org.junit.Assert.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.PrimitiveIterator.OfInt;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -50,6 +54,14 @@ public class SmallSetTest {
         fail("of([" + d + "])");
       } catch (NullPointerException | IllegalArgumentException e) {
         // expected
+      }
+    }
+    {
+      final Random rng = new Random();
+      for (int i = 0; i < 100; i++) {
+        set = rng.nextInt();
+        final BitSet bs = toBitSet(set);
+        assertEquals(set, of(bs));
       }
     }
   }
@@ -131,7 +143,7 @@ public class SmallSetTest {
         // excepted
       }
     }
-    
+
     try {
       contains(set, null);
       fail();
@@ -256,6 +268,29 @@ public class SmallSetTest {
       }
     }
 
+  }
+
+  @Test
+  public final void testIntIterator() {
+    final int set = of(1, 2, 3, 5, 7, 11, 13, 17, 31);
+    for (Function<OfInt, Integer> f : Arrays.<Function<OfInt, Integer>> asList(//
+        OfInt::nextInt, OfInt::next)) {
+      int out = 0;
+      for (OfInt itr = intIterator(set); itr.hasNext();) {
+        final Integer integer = f.apply(itr);
+        final int i = integer;
+        final byte b = (byte) i;
+        assertTrue(contains(set, b));
+        out = add(out, b);
+      }
+      assertEquals(set, out);
+    }
+    {
+      final BitSet bs = new BitSet();
+      final OfInt itr = intIterator(set);
+      itr.forEachRemaining((IntConsumer) (i -> bs.set(i)));
+      assertEquals(set, of(bs));
+    }
   }
 
   @Test
@@ -410,7 +445,7 @@ public class SmallSetTest {
     } catch (IllegalArgumentException e) {
       // expected
     }
-    
+
     try {
       random(of(5), null);
       fail();
@@ -544,13 +579,6 @@ public class SmallSetTest {
 
   @Test
   public void testLog() throws Exception {
-    try {
-      assertEquals(0, log(0));
-      fail("log(0)");
-    } catch (IllegalArgumentException e) {
-      // expected!
-    }
-
     assertEquals(0, log(/* 2^0 = */1));
     assertEquals(4, log(2 * 2 * 2 * 2));
 

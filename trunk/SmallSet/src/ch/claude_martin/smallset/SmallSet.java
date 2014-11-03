@@ -143,6 +143,18 @@ public final class SmallSet {
     return set;
   }
 
+  /**
+   * Creates set of a BitSet.
+   */
+  public static int of(final BitSet bitset) {
+    requireNonNull(bitset, "bitset");
+    int result = 0;
+    for (int i = bitset.nextSetBit(0); i >= 0; i = bitset.nextSetBit(i + 1)) {
+      result |= (1 << checkRange(i));
+    }
+    return result;
+  }
+
   /** Set with just one single value. */
   public static int singleton(final int val) {
     return 1 << checkRange(val);
@@ -478,7 +490,7 @@ public final class SmallSet {
     return sj.toString();
   }
 
-  /** {@link TreeSet} of the given set. */
+  /** Creates a new {@link TreeSet} of the given set. */
   public static TreeSet<Byte> toSet(int set) {
     final TreeSet<Byte> result = new TreeSet<>();
     for (byte value = 0; set != 0; value++) {
@@ -489,6 +501,7 @@ public final class SmallSet {
     return result;
   }
 
+  /** Given set as {@code byte[]}. */
   public static byte[] toArray(int set) {
     final int size = size(set);
     final byte[] result = new byte[size];
@@ -502,7 +515,7 @@ public final class SmallSet {
   }
 
   /**
-   * Remove smalles value and consume it.
+   * Remove smallest value and consume it.
    * 
    * <p>
    * This can be used like this: <code><pre>
@@ -523,15 +536,9 @@ public final class SmallSet {
     return set & ~(1 << next);
   }
 
-  /** {@link BitSet} of the given set. */
+  /** Creates a new {@link BitSet} of the given set. */
   public static BitSet toBitSet(int set) {
-    final BitSet result = new BitSet(32);
-    for (int value = 0; set != 0; value++) {
-      if ((set & 1) != 0)
-        result.set(value);
-      set >>>= 1;
-    }
-    return result;
+    return BitSet.valueOf(new long[] { set & 0xFFFFFFFFL });
   }
 
   /** {@link EnumSet} of the given set. */
@@ -686,8 +693,6 @@ public final class SmallSet {
    * This can be used to get a value from a singleton set.
    */
   static int log(int i) {
-    if (i == 0)
-      throw new IllegalArgumentException("log(0) = -Infinity");
     int result = 0;
     if ((i & 0xFFFF_0000) != 0) {
       i >>>= 16;
