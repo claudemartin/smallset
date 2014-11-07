@@ -24,7 +24,7 @@ import java.util.stream.StreamSupport;
  *   final int set = SmallSet.of(<i>???</i>)
  *   <i>...</i>
  *   // iterate and process all values in set:
- *   for (int itr = set, value = 0; itr != 0; itr >>>= 1) {
+ *   for (int itr = set, value = 0; itr != 0; itr &gt;&gt;&gt;= 1) {
  *     if ((itr &amp; 1) != 0)
  *       <i>process</i>(value);
  *     value++;
@@ -268,6 +268,54 @@ public final class SmallSet {
    */
   public static int add(final int set, final Enum<?> element) {
     return set | (1 << checkRange(requireNonNull(element, "element").ordinal()));
+  }
+
+  /**
+   * The powerset, which is the set of all subsets.
+   * <p>
+   * Note: Complexity is <code>O(2<sup>n</sup>)</code>. For a set with 32 elements this would be
+   * rather large (2<sup>32</sup> = 4294967296).
+   * <p>
+   * This is not thread safe and has to be processed sequentially.
+   * 
+   * @return The powerset of this set.
+   * */
+  public static IntStream powerset(final int set) {
+    final int setSize = size(set);
+    if (setSize == 0)
+      return IntStream.of(empty());
+    if (setSize == 1)
+      return IntStream.of(empty(), singleton(log(set)));
+
+    final long powersetSize = 1 << setSize;
+    final OfInt itr = new OfInt() {
+      private long i = 0;
+      private final byte[] array = toArray(set);
+
+      @Override
+      public int nextInt() {
+        if (!hasNext())
+          throw new NoSuchElementException();
+        try {
+          int result = 0;
+          for (int x = 0; x < 32; x++)
+            if (((this.i & (1L << x)) != 0))
+              result |= 1 << this.array[x];
+          return result;
+        } finally {
+          this.i++;
+        }
+      }
+
+      @Override
+      public boolean hasNext() {
+        return this.i < powersetSize;
+      }
+    };
+
+    final int characteristics = Spliterator.NONNULL | Spliterator.SIZED | Spliterator.DISTINCT;
+    return StreamSupport.intStream(//
+        Spliterators.spliterator(itr, powersetSize, characteristics), false);
   }
 
   /**
