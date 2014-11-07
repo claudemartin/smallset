@@ -12,8 +12,8 @@ import java.util.PrimitiveIterator.OfInt;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.*;
+import java.util.stream.Collector.Characteristics;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -691,4 +691,41 @@ public class SmallSetTest {
     assertEquals(bitset, toBitSet(set));
   }
 
+  @Test
+  public void testPowerset() throws Exception {
+    final Collector<Integer, ?, Set<Integer>> toSet = Collectors.toSet();
+    // Very large result, but this should be lazy:
+    powerset(complement(empty()));
+
+    int set = empty();
+    IntStream ps = powerset(set);
+    assertEquals(new HashSet<>(asList(empty())), ps.boxed().collect(toSet));
+    Set<Integer> collected;
+
+    for (int i : asList(0,5,31)) {
+      set = singleton(i);
+      ps = powerset(set);
+      collected = ps.boxed().collect(toSet);
+      assertEquals(new HashSet<>(asList(empty(), singleton(i))), collected);
+    }
+
+    set = of(7, 12, 31);
+    ps = powerset(set);
+    collected = ps.boxed().collect(toSet);
+
+    assertEquals(1 << size(set), collected.size());
+    assertTrue(collected.contains(empty()));
+    assertTrue(collected.contains(singleton(7)));
+    assertTrue(collected.contains(singleton(12)));
+    assertTrue(collected.contains(singleton(31)));
+    assertTrue(collected.contains(of(7, 12)));
+    assertTrue(collected.contains(of(12, 31)));
+    assertTrue(collected.contains(of(7, 31)));
+    assertTrue(collected.contains(of(7, 12, 31)));
+
+    set = of(0, 3, 5, 7, 11, 13, 31);
+    ps = powerset(set);
+    assertEquals(1 << size(set), ps.distinct().count());
+
+  }
 }
