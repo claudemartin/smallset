@@ -32,8 +32,12 @@ import java.util.stream.StreamSupport;
  *       <i>process</i>(value);
  *     value++;
  *   }
+ * </pre></code> Or alternatively:<br>
+ * <code><pre>
+ *   for (byte n; set != 0; set = remove(set, n)) 
+ *     result.add(n = next(set));
  * </pre></code>
- * 
+ *
  * <p>
  * In most cases the type int is used for the set (32 bits as a bit field) and byte is the type of
  * the elements. Since there is no <i>OptionalByte</i> in java some methods return
@@ -333,7 +337,12 @@ public final class SmallSet {
    * @return <code>set \ {element}</code>
    */
   public static int remove(final int set, final byte element) {
-    return set & ~(1 << checkRange(element));
+    return rem(set, checkRange(element));
+  }
+
+  /** {@link #remove(int, byte)}, but without check of range. */
+  static int rem(final int set, final byte element) {
+    return set & ~(1 << element);
   }
 
   /**
@@ -368,14 +377,8 @@ public final class SmallSet {
     if (set == 0)
       return 0;
     int result = 0;
-    byte value = (byte) Integer.numberOfTrailingZeros(set);
-    set >>>= value;
-    while (set != 0) {
-      if ((set & 1) != 0)
-        result = add(result, (byte) checkRange(operator.applyAsInt(value)));
-      set >>>= 1;
-      value++;
-    }
+    for (byte n; set != 0; set = rem(set, n))
+      result = add(result, (byte) checkRange(operator.applyAsInt(n = next(set))));
     return result;
   }
 
@@ -427,16 +430,8 @@ public final class SmallSet {
    */
   public static void forEach(int set, final ByteConsumer consumer) {
     requireNonNull(consumer, "consumer");
-    if (set == 0)
-      return;
-    byte value = (byte) Integer.numberOfTrailingZeros(set);
-    set >>>= value;
-    while (set != 0) {
-      if ((set & 1) != 0)
-        consumer.accept(value);
-      set >>>= 1;
-      value++;
-    }
+    for (byte n; set != 0; set = rem(set, n))
+      consumer.accept(n = next(set));
   }
 
   /**
@@ -446,8 +441,7 @@ public final class SmallSet {
    */
   public static ByteIterator iterator(final int set) {
     return new ByteIterator() {
-      private byte next = (byte) Integer.numberOfTrailingZeros(set);
-      private int _set = set >>> this.next;
+      private int _set = set;
 
       @Override
       public boolean hasNext() {
@@ -458,12 +452,9 @@ public final class SmallSet {
       public byte nextByte() throws NoSuchElementException {
         if (this._set == 0)
           throw new NoSuchElementException();
-        final byte result = this.next;
-        do {
-          this._set >>>= 1;
-          this.next++;
-        } while (this._set != 0 && (this._set & 1) == 0);
-        return result;
+        byte next = SmallSet.next(this._set);
+        this._set = rem(this._set, next);
+        return next;
       }
     };
   }
@@ -639,24 +630,16 @@ public final class SmallSet {
     if (set == 0)
       return "()";
     final StringJoiner sj = new StringJoiner(",", "(", ")");
-
-    for (byte value = 0; set != 0; value++) {
-      if ((set & 1) != 0)
-        sj.add(Byte.toString(value));
-      set >>>= 1;
-    }
-
+    for (byte n; set != 0; set = rem(set, n))
+      sj.add(Byte.toString(n = next(set)));
     return sj.toString();
   }
 
   /** Creates a new {@link TreeSet} of the given set. */
   public static TreeSet<Byte> toSet(int set) {
     final TreeSet<Byte> result = new TreeSet<>();
-    for (byte value = 0; set != 0; value++) {
-      if ((set & 1) != 0)
-        result.add(value);
-      set >>>= 1;
-    }
+    for (byte n; set != 0; set = rem(set, n))
+      result.add(n = next(set));
     return result;
   }
 
@@ -678,21 +661,35 @@ public final class SmallSet {
    * 
    * <p>
    * This can be used like this: <code><pre>
-   * int set = of(expected);
+   * int set = of(.....);
    * while (set != 0)
-   *   set = next(set, b -&gt; actual.add(b));
+   *   set = next(set, b -&gt; <i>process</i>(b));
    * </pre></code>
    * 
    * @throw NoSuchElementException when the set is empty
    * @see #iterate(int)
+   * @see #forEach(int, ByteConsumer)
    */
   public static int next(final int set, final ByteConsumer consumer) throws NoSuchElementException {
     requireNonNull(consumer, "consumer");
     if (set == 0)
       throw new NoSuchElementException("empty set");
-    final byte next = (byte) Integer.numberOfTrailingZeros(set);
+    final byte next = next(set);
     consumer.accept(next);
     return set & ~(1 << next);
+  }
+
+  /**
+   * Number of trailing zeroes. This is {@link Integer#numberOfTrailingZeros(int)} cast to
+   * {@code byte}.
+   * 
+   * @return First element, or 32 if set is empty.
+   * 
+   * @see #next(int, ByteConsumer)
+   * @see #min(int)
+   */
+  public static byte next(final int set) {
+    return (byte) Integer.numberOfTrailingZeros(set);
   }
 
   /** Creates a new {@link BitSet} of the given set. */
@@ -705,11 +702,8 @@ public final class SmallSet {
     requireNonNull(type, "type");
     final EnumSet<E> result = EnumSet.noneOf(type);
     final E[] constants = type.getEnumConstants();
-    for (byte value = 0; set != 0; value++) {
-      if ((set & 1) != 0)
-        result.add(constants[value]);
-      set >>>= 1;
-    }
+    for (byte n; set != 0; set = rem(set, n))
+      result.add(constants[n = next(set)]);
     return result;
   }
 
@@ -827,6 +821,8 @@ public final class SmallSet {
   /**
    * Returns an {@code OptionalInt} describing the minimum element of the given set, or an empty
    * optional if the set is empty. This is equivalent to <code>reduce(set, Integer::min)</code>.
+   * 
+   * @see #next(int)
    */
   public static OptionalInt min(int set) {
     int result = Integer.numberOfTrailingZeros(set);
