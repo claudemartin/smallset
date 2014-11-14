@@ -7,7 +7,7 @@ import java.util.function.IntConsumer;
 /**
  * Represents an operation that accepts a single {@code byte}-valued argument and returns no result.
  * This is the primitive type specialization of {@link Consumer} for {@code byte}. Unlike most other
- * functional interfaces, {@code IntConsumer} is expected to operate via side-effects.
+ * functional interfaces, {@code ByteConsumer} is expected to operate via side-effects.
  *
  * @see Consumer
  * @see IntConsumer
