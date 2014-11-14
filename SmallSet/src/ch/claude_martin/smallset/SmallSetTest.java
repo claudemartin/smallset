@@ -342,10 +342,20 @@ public class SmallSetTest {
   @Test
   public void testOfRange() throws Exception {
     final int set = of(5, 6, 7);
-    final int range = ofRange((byte) 5, (byte) 8);
+    final int range = ofRange(5, 8);
     assertEquals(set, range);
 
-    assertEquals(-1, ofRange((byte) 0, (byte) 32));
+    assertEquals(-1, ofRange(0, 32));
+
+    for (byte a = 0; a < 32; a++)
+      for (byte z = (byte) (a + 1); z <= 32; z++) {
+        int actual = ofRange(a, z);
+        int expected = 0;
+        for (byte b = a; b < z; b++)
+          expected = add(expected, b);
+        String msg = "[" + a + ".." + z + "[";
+        assertEquals(msg, expected, actual);
+      }
 
     try {
       ofRange(0, 0);
@@ -385,6 +395,16 @@ public class SmallSetTest {
     assertEquals(set, range);
 
     assertEquals(-1, ofRangeClosed(0, 31));
+
+    for (byte a = 0; a < 32; a++)
+      for (byte z = a; z < 32; z++) {
+        int actual = ofRangeClosed(a, z);
+        int expected = 0;
+        for (byte b = a; b <= z; b++)
+          expected = add(expected, b);
+        String msg = "[" + a + ".." + z + "]";
+        assertEquals(msg, expected, actual);
+      }
 
     for (int i = 0; i < 32; i++)
       assertEquals(of(i), ofRangeClosed(i, i));
@@ -498,6 +518,17 @@ public class SmallSetTest {
     assertEquals(union(of(0), ofRange(4, 32)), complement);
     complement = complement(of(0, 31));
     assertEquals(ofRange(1, 31), complement);
+
+    complement = complement(of(0, 31), 0, 31);
+    assertEquals(ofRange(1, 31), complement);
+
+    complement = complement(of(0, 1, 2), 0, 5);
+    assertEquals(of(3, 4, 5), complement);
+
+    for (int i = 0; i < 32; i++) {
+      complement = complement(empty(), 0, i);
+      assertEquals(ofRangeClosed(0, i), complement);
+    }
   }
 
   @Test
@@ -570,10 +601,13 @@ public class SmallSetTest {
       int expected = empty();
       for (byte i = 0; i < 32; i += 2)
         expected = add(expected, i);
-      for (int i = 0; i < 100; i++) {
+      for (int i = 0; i < 32; i++) {
         // The first run is very slow, then it gets optimized.
         // before() does that first run so this will be faster.
-        final int actual = collect(stream(all).parallel().filter(x -> x % 2 == 0));
+        int actual = collect(stream(all).parallel().filter(x -> x % 2 == 0));
+        assertEquals(expected, actual);
+        // Now with a Stream of Numbers (Bytes -> Integer):
+        actual = collect(byteStream(all).parallel().filter(x -> x % 2 == 0).map(b -> b.intValue()));
         assertEquals(expected, actual);
       }
     }
@@ -581,6 +615,12 @@ public class SmallSetTest {
     for (final Byte bad : BAD_VALUES) {
       try {
         collect(IntStream.of(bad));
+        fail("" + bad);
+      } catch (IllegalArgumentException e) {
+        // Expected
+      }
+      try {
+        collect(Stream.of(bad));
         fail("" + bad);
       } catch (IllegalArgumentException e) {
         // Expected
@@ -672,6 +712,40 @@ public class SmallSetTest {
   }
 
   @Test
+  public void testReplaceAll() throws Exception {
+
+    assertEquals(empty(), replaceAll(empty(), i -> i * 5));
+
+    int set = of(6, 14, 30);
+    set = replaceAll(set, i -> i / 2);
+    assertEquals(SmallSet.toString(set), of(3, 7, 15), set);
+
+    set = ofRange(0, 32);
+    set = replaceAll(set, i -> i);
+    assertEquals(SmallSet.toString(set), ofRange(0, 32), set);
+
+    set = ofRange(0, 32);
+    set = replaceAll(set, i -> -(i - 31));
+    assertEquals(SmallSet.toString(set), ofRange(0, 32), set);
+
+    set = ofRange(0, 6);
+    for (int j = 0; j < 32 - 6; j++) {
+      set = replaceAll(set, i -> i + 1);
+      assertEquals(SmallSet.toString(set), ofRange(j + 1, j + 7), set);
+    }
+
+    for (Byte b : BAD_VALUES) {
+      try {
+        replaceAll(of(15), i -> b);
+        fail("bad: " + b);
+      } catch (IllegalArgumentException e) {
+        // expected
+      }
+    }
+
+  }
+
+  @Test
   public void testToBitSet() throws Exception {
     final Random rng = new Random();
     final BitSet bitset = new BitSet();
@@ -702,7 +776,7 @@ public class SmallSetTest {
     assertEquals(new HashSet<>(asList(empty())), ps.boxed().collect(toSet));
     Set<Integer> collected;
 
-    for (int i : asList(0,5,31)) {
+    for (int i : asList(0, 5, 31)) {
       set = singleton(i);
       ps = powerset(set);
       collected = ps.boxed().collect(toSet);
