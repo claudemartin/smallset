@@ -5,7 +5,10 @@ import static java.util.Objects.requireNonNull;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.function.IntBinaryOperator;
+import java.util.function.IntUnaryOperator;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -61,6 +64,8 @@ public final class SmallSet {
   }
 
   private static byte numberToByte(final Number n) {
+    if (null == n)
+      throw new NullPointerException("given number is null");
     final double d = n.doubleValue();
 
     if (Double.isNaN(d))
@@ -298,7 +303,7 @@ public final class SmallSet {
           throw new NoSuchElementException();
         try {
           int result = 0;
-          for (int x = 0; x < 32; x++)
+          for (int x = 0; x < Integer.SIZE; x++)
             if (((this.i & (1L << x)) != 0))
               result |= 1 << this.array[x];
           return result;
@@ -344,6 +349,36 @@ public final class SmallSet {
     return set & ~(1 << checkRange(requireNonNull(element, "element").ordinal()));
   }
 
+  /**
+   * Replaces each element of this set with the result of applying the operator to that element.
+   * Errors or runtime exceptions thrown by the operator are relayed to the caller.
+   *
+   * <p>
+   * This is basically the same as collect(stream(set).map(operator))
+   * 
+   * @param operator
+   *          the operator to apply to each element
+   * @throws NullPointerException
+   *           if the specified operator is null or if the operator result is a null value
+   * @throws IllegalArgumentException
+   *           if the operator returns an invalid value
+   */
+  public static int replaceAll(int set, IntUnaryOperator operator) {
+    Objects.requireNonNull(operator);
+    if (set == 0)
+      return 0;
+    int result = 0;
+    byte value = (byte) Integer.numberOfTrailingZeros(set);
+    set >>>= value;
+    while (set != 0) {
+      if ((set & 1) != 0)
+        result = add(result, (byte) checkRange(operator.applyAsInt(value)));
+      set >>>= 1;
+      value++;
+    }
+    return result;
+  }
+
   /** Union of two sets. */
   public static int union(final int a, final int b) {
     return a | b;
@@ -360,8 +395,15 @@ public final class SmallSet {
   }
 
   /** Complement of a set. The domain is [0,1,..,31]. */
-  public static int complement(final int a) {
-    return ~a;
+  public static int complement(final int set) {
+    return ~set;
+  }
+
+  /** Complement of a set. The domain is [min,..,max], both inclusive. */
+  public static int complement(final int set, final int min, final int max) {
+    if (checkRange(min) > checkRange(max))
+      throw new IllegalArgumentException("max>min");
+    return ~set & ofRangeClosed(min, max);
   }
 
   /**
@@ -443,14 +485,52 @@ public final class SmallSet {
     };
   }
 
+  private static final int CHARACTERISTICS = Spliterator.SIZED | Spliterator.SUBSIZED
+      | Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED;
+
+  public static Spliterator.OfInt spliterator(final int set) {
+    return spliterator(set, size(set));
+  }
+
+  private static Spliterator.OfInt spliterator(final int set, final int size) {
+    return Spliterators.spliterator(intIterator(set), size(set), CHARACTERISTICS);
+  }
+
   /**
    * Creates an {@link IntStream} for the given set.
+   * 
+   * @see #byteStream(int)
    */
   public static IntStream stream(final int set) {
-    return StreamSupport.intStream(
-        () -> Spliterators.spliterator(intIterator(set), size(set), Spliterator.ORDERED
-            | Spliterator.DISTINCT | Spliterator.SORTED), Spliterator.SIZED | Spliterator.SUBSIZED
-            | Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED, false);
+    final int size = size(set);
+    if (size == 0)
+      return IntStream.empty();
+    if (size == 1)
+      return IntStream.of(log(set));
+    return StreamSupport.intStream(() -> spliterator(set, size), CHARACTERISTICS, false);
+  }
+
+  /**
+   * Creates an {@link Stream} of {@link Byte Bytes} (boxed) for the given set.
+   * 
+   * @see #stream(int)
+   */
+  public static Stream<Byte> byteStream(final int set) {
+    final int size = size(set);
+    if (size == 0)
+      return Stream.empty();
+    if (size == 1)
+      return Stream.of(Byte.valueOf((byte) log(set)));
+    return StreamSupport.stream(
+        () -> Spliterators.spliterator(iterator(set), size, CHARACTERISTICS), //
+        CHARACTERISTICS, false);
+  }
+
+  /**
+   * Mutable integer that is used internally by #collect(IntStream).
+   */
+  static final class MutableInt {
+    int value = empty();
   }
 
   /**
@@ -466,12 +546,28 @@ public final class SmallSet {
    */
   public static int collect(final IntStream stream) throws IllegalArgumentException {
     requireNonNull(stream, "stream");
-    final class MutableInt {
-      int value = empty();
-    }
     return stream.collect(//
         MutableInt::new,//
         (set, b) -> set.value = SmallSet.add(set.value, (byte) checkRange(b)), //
+        (a, b) -> a.value |= b.value).value;
+  }
+
+  /**
+   * Fast implementation of {@link Stream#collect} to collect numbers from a stream into a set.
+   * <p>
+   * This is a terminal operation.
+   * 
+   * @param stream
+   *          A Stream, e.g. one created by {@link SmallSet#byteStream(int)}
+   * @return An integer representing a set of the values from the stream
+   * @throws IllegalArgumentException
+   *           if any of the values is out of range
+   */
+  public static int collect(final Stream<? extends Number> stream) throws IllegalArgumentException {
+    requireNonNull(stream, "stream");
+    return stream.collect(//
+        MutableInt::new,//
+        (set, n) -> set.value = SmallSet.add(set.value, numberToByte(n)), //
         (a, b) -> a.value |= b.value).value;
   }
 
@@ -498,10 +594,7 @@ public final class SmallSet {
     if (checkRange(a) >= z)
       throw new IllegalArgumentException("z<=a");
     checkRange(z - 1);
-    int i = 0;
-    for (int x = a; x < z; x++)
-      i += 1 << x;
-    return i;
+    return lessThan(z - a) << a;
   }
 
   /**
@@ -516,10 +609,29 @@ public final class SmallSet {
   public static int ofRangeClosed(final int a, final int z) {
     if (checkRange(a) > checkRange(z))
       throw new IllegalArgumentException("z<a");
-    int i = 0;
-    for (int x = a; x <= checkRange(z); x++)
-      i += 1 << x;
-    return i;
+    return lessOrEqual(z - a) << a;
+  }
+
+  /**
+   * From 0 (inclusive) to n (inclusive). The returned values has n+1 bits set to 1.
+   * <p>
+   * Example: lessOrEqual(5) = 0b00111111 = 63
+   */
+  private static int lessOrEqual(final int n) {
+    assert n >= 0 : "n<0";
+    assert n < Integer.SIZE : "n>31";
+    return lessThan(n + 1);
+  }
+
+  /**
+   * From 0 (inclusive) to n (exclusive). The returned values has n bits set to 1.
+   * <p>
+   * Example: lessThan(5) = 0b00011111 = 31
+   * */
+  private static int lessThan(final int n) {
+    assert n > 0 : "n<=0";
+    assert n <= Integer.SIZE : "n>32";
+    return 0xffffffff >>> (Integer.SIZE - n);
   }
 
   /** String representation of the given set. */
@@ -718,7 +830,7 @@ public final class SmallSet {
    */
   public static OptionalInt min(int set) {
     int result = Integer.numberOfTrailingZeros(set);
-    if (result == 32)
+    if (result == Integer.SIZE)
       return OptionalInt.empty();
     return OptionalInt.of(result);
   }
