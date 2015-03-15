@@ -36,7 +36,7 @@
       author="true" destdir="./doc" 
       encoding="UTF-8" charset="UTF-8" 
       nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="1.8" 
-      header="project home: &lt;a style=&quot;text-transform:lowercase;&quot; href=&quot;https://code.google.com/p/smallset/&quot;&gt;https://code.google.com/p/smallset/&lt;/a&gt;" 
+      header="project home: &lt;a style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;" 
       use="true" version="true">
       <link href="http://docs.oracle.com/javase/8/docs/api/" />
       <!-- sourcepath="../src" packagenames="ch.claude_martin.smallset"  -->
