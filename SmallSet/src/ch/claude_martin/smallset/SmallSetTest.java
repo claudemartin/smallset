@@ -12,8 +12,10 @@ import java.util.PrimitiveIterator.OfInt;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.stream.*;
-import java.util.stream.Collector.Characteristics;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,7 +26,8 @@ public class SmallSetTest {
   /** @see #testCollect() */
   @BeforeClass
   public static void before() {
-    // This leads to optimization, which reduces the overall time of the test run.
+    // This leads to optimization, which reduces the overall time of the test
+    // run.
     if (Runtime.getRuntime().availableProcessors() > 1) {
       ForkJoinPool.commonPool().execute(() -> {
         collect(stream(complement(empty())).parallel().filter(x -> x % 2 == 0));
@@ -59,8 +62,7 @@ public class SmallSetTest {
       // expected
     }
 
-    for (Double d : asList((Double) null, Double.NaN, Double.NEGATIVE_INFINITY,
-        Double.POSITIVE_INFINITY)) {
+    for (Double d : asList((Double) null, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)) {
       try {
         of(asList(d));
         fail("of([" + d + "])");
@@ -437,9 +439,6 @@ public class SmallSetTest {
 
   @Test
   public final void testToSet() {
-
-    toSet(singleton(31));
-
     final Byte _0 = 0;
     final Byte _1 = 1;
     final Byte _5 = 5;
@@ -452,9 +451,6 @@ public class SmallSetTest {
 
   @Test
   public final void testToArray() {
-
-    toArray(singleton(31));
-
     assertArrayEquals(new byte[0], toArray(empty()));
     assertArrayEquals(new byte[] { 1, 5 }, toArray(of(1, 5)));
     assertArrayEquals(new byte[] { 0, 1, 5 }, toArray(of(0, 1, 5)));
@@ -498,6 +494,11 @@ public class SmallSetTest {
 
     EnumSet<Alphabet> enumSet = toEnumSet(set1, Alphabet.class);
     assertEquals(EnumSet.allOf(Alphabet.class), enumSet);
+    for (Alphabet a : Alphabet.values()) {
+      assertEquals(EnumSet.of(a), toEnumSet(singleton(a), Alphabet.class));
+      for (Alphabet b : Alphabet.values())
+        assertEquals(EnumSet.of(a, b), toEnumSet(of(a, b), Alphabet.class));
+    }
   }
 
   @Test
@@ -670,30 +671,66 @@ public class SmallSetTest {
 
   @Test
   public void testMinMax() throws Exception {
-    assertEquals(OptionalInt.empty(), max(empty()));
-    assertEquals(OptionalInt.empty(), min(empty()));
+    assertEquals(OptionalByte.empty(), max(empty()));
+    assertEquals(OptionalByte.empty(), min(empty()));
 
     for (int i = 0; i < 32; i++) {
-      assertEquals(OptionalInt.of(i), max(singleton(i)));
-      assertEquals(OptionalInt.of(i), min(singleton(i)));
+      assertEquals(OptionalByte.of(i), max(singleton(i)));
+      assertEquals(OptionalByte.of(i), min(singleton(i)));
     }
 
-    assertEquals(OptionalInt.of(0), min(complement(empty())));
-    assertEquals(OptionalInt.of(31), max(complement(empty())));
+    assertEquals(OptionalByte.of(0), min(complement(empty())));
+    assertEquals(OptionalByte.of(31), max(complement(empty())));
 
     {
       final Random rng = new Random(System.nanoTime());
       int set = empty();
       while (true) {
         final IntSummaryStatistics stats = stream(set).summaryStatistics();
-        assertEquals(stats.getMax(), max(set).orElse(Integer.MIN_VALUE));
-        assertEquals(stats.getMin(), min(set).orElse(Integer.MAX_VALUE));
+        assertEquals(stats.getMax(), (int) max(set).mapToObj(Integer::valueOf).orElse(Integer.MIN_VALUE));
+        assertEquals(stats.getMin(), (int) min(set).mapToObj(Integer::valueOf).orElse(Integer.MAX_VALUE));
         final int complement = complement(set);
         if (complement == 0)
           break;
         set = add(set, random(complement, rng));
       }
     }
+  }
+
+  @Test
+  public void testNavigation() throws Exception {
+    final int set = of(1, 2, 3, 31);
+
+    // FLOOR:
+    assertEquals(OptionalByte.of(31), SmallSet.floor(set, (byte) 31));
+    assertEquals(OptionalByte.of(3), SmallSet.floor(set, (byte) 30));
+    assertEquals(OptionalByte.of(3), SmallSet.floor(set, (byte) 3));
+    assertEquals(OptionalByte.of(1), SmallSet.floor(set, (byte) 1));
+    assertEquals(OptionalByte.empty(), SmallSet.floor(set, (byte) 0));
+    assertEquals(OptionalByte.empty(), SmallSet.floor(empty(), (byte) 0));
+
+    // CEILING:
+    assertEquals(OptionalByte.of(31), SmallSet.ceiling(set, (byte) 31));
+    assertEquals(OptionalByte.of(31), SmallSet.ceiling(set, (byte) 30));
+    assertEquals(OptionalByte.of(3), SmallSet.ceiling(set, (byte) 3));
+    assertEquals(OptionalByte.of(1), SmallSet.ceiling(set, (byte) 1));
+    assertEquals(OptionalByte.empty(), SmallSet.ceiling(empty(), (byte) 0));
+
+    // HIGHER:
+    assertEquals(OptionalByte.empty(), SmallSet.higher(set, (byte) 31));
+    assertEquals(OptionalByte.of(31), SmallSet.higher(set, (byte) 30));
+    assertEquals(OptionalByte.of(31), SmallSet.higher(set, (byte) 3));
+    assertEquals(OptionalByte.of(2), SmallSet.higher(set, (byte) 1));
+    assertEquals(OptionalByte.of(1), SmallSet.higher(set, (byte) 0));
+    assertEquals(OptionalByte.empty(), SmallSet.higher(empty(), (byte) 0));
+
+    // LOWER:
+    assertEquals(OptionalByte.of(3), SmallSet.lower(set, (byte) 31));
+    assertEquals(OptionalByte.of(3), SmallSet.lower(set, (byte) 30));
+    assertEquals(OptionalByte.of(2), SmallSet.lower(set, (byte) 3));
+    assertEquals(OptionalByte.empty(), SmallSet.lower(set, (byte) 1));
+    assertEquals(OptionalByte.empty(), SmallSet.lower(set, (byte) 0));
+    assertEquals(OptionalByte.empty(), SmallSet.lower(empty(), (byte) 5));
   }
 
   @Test
@@ -708,7 +745,6 @@ public class SmallSetTest {
 
     assertEquals(sum(complement(empty())), reduce(complement(empty()), 0, Integer::sum));
     assertEquals(sum(complement(empty())), reduce(complement(empty()), Integer::sum).getAsInt());
-
   }
 
   @Test
