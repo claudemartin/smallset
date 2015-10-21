@@ -2,7 +2,7 @@
 Methods to use an int as a bit set of small values. Uses 32 bits for a bit set and offers high performance for algorithms. Designed for Java 8 and compatible with common interfaces and classes.
 
 <h2>Download</h2>
-http://claude-martin.ch/smallset/smallset.jar (2014/11/07)
+https://github.com/claudemartin/smallset/releases/tag/0.1
 
 <h2>Javadoc</h2>
 http://claude-martin.ch/smallset/doc/
