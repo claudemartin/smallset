@@ -15,6 +15,7 @@ An int only allows 32 values (0 to 31), but it would be easy to switch to long. 
 Newer versions of Java might support value types (cf [http://cr.openjdk.java.net/~jrose/values/values-0.html]) . Then this can be changed to such a value type and the methods would not need to be static. 
 
 <h2>Example</h2>
+
 ```java
 import static ch.claude_martin.smallset.SmallSet.*;
 import ch.claude_martin.smallset.SmallSet;
