@@ -12,7 +12,7 @@ I did this when I had an assignment for a sudoku solver/generator. I needed a fa
 
 An int only allows 32 values (0 to 31), but it would be easy to switch to long. That would be mostly search/replace. The elements in the set would still be bytes. But don't forget to replace `1` by `1L`. 
 
-Newer versions of Java might support value types (cf [http://cr.openjdk.java.net/~jrose/values/values-0.html]) . Then this can be changed to such a value type and the methods would not need to be static. 
+Newer versions of Java might support value types (cf [http://cr.openjdk.java.net/~jrose/values/values-0.html]). Then this can be changed to such a value type and the methods would not need to be static. Note that *records* (since Java 14) are not value types and would not have the same performance. 
 
 <h2>Example</h2>
 
