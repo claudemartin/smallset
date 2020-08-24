@@ -40,3 +40,7 @@ Check out the javadoc for more methods:
 http://claude-martin.ch/smallset/doc/
 
 Or browser the code. There are only 3 classes (plus a JUnit test class).
+
+<h2>Valhalla</h2>
+
+There's a branch for a version in which SmallSet in an `inline class`. It only works with a JDK that supports this. It's available as a preview but it's not officially released with any JDK yet. I expet that they will release a preview after the next LTS release (Java 17?) and will add it to a later LTS as an official feature of the Java language. 

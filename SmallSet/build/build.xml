@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="SmallSet">
-  <property name="target" value="1.8" />
-  <property name="source" value="1.8" />
+  <property name="target" value="14" />
+  <property name="source" value="14" />
 
   <target name="clean">
     <delete dir="../bin" />
+    <mkdir dir="../bin" />
   </target>
 
   <target name="compile">
-    <javac debug="true" debuglevel="${debuglevel}" destdir="../bin" srcdir="../src" includeantruntime="false" source="${source}" target="${target}" />
+    <javac debug="true" destdir="../bin" srcdir="../src" includeantruntime="false" source="${source}" target="${target}" >
+      <exclude name="**/*Test.java" /> 
+      <!-- Tests would require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": 
+       <classpath><fileset dir="../lib"><include name="**/*.jar" /></fileset></classpath> -->
+    </javac>
   </target>
 
   <target name="build">
@@ -38,13 +43,25 @@
       nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="1.8" 
       header="project home: &lt;a target=&quot;_blank&quot; style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;" 
       use="true" version="true">
-      <link href="http://docs.oracle.com/javase/8/docs/api/" />
+      <link href="https://docs.oracle.com/en/java/javase/14/docs/api/" />
       <!-- sourcepath="../src" packagenames="ch.claude_martin.smallset"  -->
       <fileset dir="../src" casesensitive="yes">
         <include name="**/*.java"/>
-        <exclude name="**/*Test.java"/>
       </fileset>
     </javadoc>
+  </target>
+
+  <target name="test">
+  <!-- Sadly, this doesn't find my tests. I don't know why. See "test.bat".-->
+    <java jar="../lib/junit-platform-console-standalone-1.6.2.jar" classpath="../bin" fork="true">
+      <arg value="--scan-classpath"/> 
+      <arg value="--fail-if-no-tests"/>
+      <arg value="--reports-dir=reports"/>
+    </java>
+  </target>
+
+  <target name="run">
+    <java classpath="smallset.jar" classname="ch.claude_martin.smallset.Main"/>
   </target>
 
 </project>
