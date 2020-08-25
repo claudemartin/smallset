@@ -183,8 +183,6 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   /**
    * Tests if an element is in the set.
    * 
-   * @param set
-   *          A set
    * @param element
    *          An element
    * @return <code>element ∈ set</code>
@@ -194,10 +192,19 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   }
 
   /**
+   * Tests if an element is in the set.
+   * 
+   * @param element
+   *          An element
+   * @return <code>element ∈ set</code>
+   */
+  public boolean contains(final int element) {
+    return (this.value & (1 << checkRange(element))) != 0;
+  }
+
+  /**
    * Tests if an enum element's ordinal value is in the set.
    * 
-   * @param set
-   *          A set
    * @param element
    *          An element
    * @return <code>element ∈ set</code>
@@ -209,8 +216,6 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   /**
    * Checks if the set contains all elements.
    * 
-   * @param set
-   *          A set
    * @param elements
    *          Elements to be checked for containment in given set
    */
@@ -222,8 +227,6 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   /**
    * Checks if the set contains all elements.
    * 
-   * @param set
-   *          A set
    * @param elements
    *          Elements to be checked for containment in given set
    */
@@ -243,15 +246,14 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
     return (this.value & mask) == mask;
   }
 
-    /**
+  /**
    * Checks if the set contains all elements.
    * 
    * @param elements
    *          Elements to be checked for containment in given set
    */
   public  boolean containsAll(final SmallSet elements) {
-    final int mask = requireNonNull(elements, "elements").value;
-    return (this.value & mask) == mask;
+    return (this.value & elements.value) == elements.value;
   }
 
   /**
@@ -266,10 +268,15 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   }
 
   /**
+   * Compares this SmallSet to the other.
+   */
+  public int compareTo(SmallSet other) {
+    return this.value - other.value;
+}
+
+  /**
    * Adds an element to the set.
    * 
-   * @param set
-   *          A set
    * @param element
    *          An element
    * @return <code>set ∪ {element}</code>
@@ -279,10 +286,19 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   }
 
   /**
+   * Adds an element to the set.
+   * 
+   * @param element
+   *          An element
+   * @return <code>set ∪ {element}</code>
+   */
+  public SmallSet add(final int element) {
+    return new SmallSet(this.value  | (1 << checkRange(element)));
+  }
+
+  /**
    * Adds an enum element to the set.
    * 
-   * @param set
-   *          A set
    * @param element
    *          An element
    * @return <code>set ∪ {element.ordinal()}</code>
@@ -351,14 +367,23 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   /**
    * Removes an element from a set.
    * 
-   * @param set
-   *          A set
    * @param element
    *          An element
    * @return <code>set \ {element}</code>
    */
   public SmallSet remove(final byte element) {
     return rem(this, checkRange(element));
+  }
+
+  /**
+   * Removes an element from a set.
+   * 
+   * @param element
+   *          An element
+   * @return <code>set \ {element}</code>
+   */
+  public SmallSet remove(final int element) {
+    return rem(this, (byte) checkRange(element));
   }
 
   /** {@link #remove(byte)}, but without check of range. */
@@ -369,8 +394,6 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   /**
    * Removes an element from a set.
    * 
-   * @param set
-   *          A set
    * @param element
    *          An element
    * @return <code>set \ {element.ordinal()}</code>
@@ -876,10 +899,21 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   }
 
   /**
+   * Returns the greatest element in this set strictly less than the given
+   * element, or {@code empty} if there is no such element.
+   * 
+   * @param e
+   * @return
+   */
+  public OptionalByte lower(final int e) {
+    return lower((byte) checkRange(e));
+  }
+
+  /**
    * Returns the greatest element in this set less than or equal to the given
    * element, or {@code empty} if there is no such element.
    */
-  public OptionalByte floor( final byte e) {
+  public OptionalByte floor(final byte e) {
     checkRange(e);
     int set = this.value;
     if (set == 0)
@@ -894,6 +928,14 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
       set &= ~(1 << n); // remove n
     }
     return result == -1 || result == 32 ? OptionalByte.empty() : OptionalByte.of(result);
+  }
+
+  /**
+   * Returns the greatest element in this set less than or equal to the given
+   * element, or {@code empty} if there is no such element.
+   */
+  public OptionalByte floor(final int e) {
+    return floor((byte) checkRange(e));
   }
 
   /**
@@ -919,6 +961,14 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
   }
 
   /**
+   * Returns the least element in this set greater than or equal to the given
+   * element, or {@code empty} if there is no such element.
+   */
+  public OptionalByte ceiling(final int e) {
+    return ceiling((byte) checkRange(e));
+  }
+
+  /**
    * Returns the least element in this set strictly greater than the given
    * element, or {@code empty} if there is no such element.
    */
@@ -938,6 +988,14 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
       set &= ~(1 << n); // remove n
     }
     return result == -1 || result == 32 ? OptionalByte.empty() : OptionalByte.of(result);
+  }
+
+  /**
+   * Returns the least element in this set strictly greater than the given
+   * element, or {@code empty} if there is no such element.
+   */
+  public  OptionalByte higher(final int e) {
+    return higher((byte) checkRange(e));
   }
 
   /**
@@ -966,31 +1024,4 @@ public inline class SmallSet implements Iterable<Byte>, Comparable<SmallSet?> {
     result += (i >>> 1);
     return result;
   }
-
-  /**
-   * Compares the specified object with this set for equality.  Returns
-   * {@code true} if the given object is also a SmallSet, the two sets have
-   * the same size, and every member of the given set is contained in
-   * this set. 
-   *
-   * @param o object to be compared for equality with this set
-   * @return {@code true} if the specified object is equal to this set
-   */
-  @Override
-  public boolean equals(Object o) {
-      if (o == this)
-          return true;
-      if (!(o instanceof SmallSet))
-          return false;
-      var c = (SmallSet) o;
-      if (c.size() != size())
-          return false;
-      try {
-          return containsAll(c);
-      } catch (ClassCastException | NullPointerException unused) {
-          return false;
-      }
-  }
-
-
 }
