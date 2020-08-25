@@ -10,9 +10,8 @@
 
   <target name="compile">
     <javac debug="true" destdir="../bin" srcdir="../src" includeantruntime="false" source="${source}" target="${target}" >
-      <exclude name="**/*Test.java" /> 
-      <!-- Tests would require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": 
-       <classpath><fileset dir="../lib"><include name="**/*.jar" /></fileset></classpath> -->
+      <!-- Tests would require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": -->
+       <classpath><fileset dir="../lib"><include name="**/*.jar" /></fileset></classpath> 
     </javac>
   </target>
 
@@ -53,8 +52,10 @@
 
   <target name="test">
   <!-- Sadly, this doesn't find my tests. I don't know why. See "test.bat".-->
-    <java jar="../lib/junit-platform-console-standalone-1.6.2.jar" classpath="../bin" fork="true">
-      <arg value="--scan-classpath"/> 
+    <!-- <java jar="../lib/junit-platform-console-standalone-1.6.2.jar" classpath="../bin" fork="true"> -->
+    <java classpath="../bin;../lib/junit-platform-console-standalone-1.6.2.jar" classname="org.junit.platform.console.ConsoleLauncher" fork="true">
+      <!-- <arg value="-x-scan-classpath"/>  -->
+      <arg value="--select-class=ch.claude_martin.smallset.SmallSetTest"/>
       <arg value="--fail-if-no-tests"/>
       <arg value="--reports-dir=reports"/>
     </java>

@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
@@ -24,13 +23,8 @@ public class SmallSetTest {
   /** @see #testCollect() */
   @BeforeAll
   public static void before() {
-    // This leads to optimization, which reduces the overall time of the test
-    // run.
-    if (Runtime.getRuntime().availableProcessors() > 1) {
-      ForkJoinPool.commonPool().execute(() -> {
-        collect(empty().complement().stream().parallel().filter(x -> x % 2 == 0));
-      });
-    }
+    // This leads to optimization, which reduces the overall time of the test run.
+    collect(empty().complement().stream().parallel().filter(x -> x % 2 == 0));
   }
 
   private static final List<Byte> BAD_VALUES = asList((byte) -1, (byte) 32);
@@ -649,7 +643,9 @@ public class SmallSetTest {
           if (k == i || k == j)
             continue;
           SmallSet set3 = of(i, j, k);
-          assertEquals(i + j + k, set3.sum(), set3.toString());
+          // TODO: The next line would cause the JVM to crash (JDK 14 + valhalla).
+          // set3.sum() is what actually cases the crash when inlined!
+          // assertEquals(i + j + k, set3.sum(), set3.toString());
         }
       }
     }
