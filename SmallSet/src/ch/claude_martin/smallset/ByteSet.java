@@ -15,23 +15,19 @@ import java.util.function.Consumer;
  * many methods similar to those from that interface. This implementation is not
  * thread-safe.
  * 
- * <p>
- * Note that Java 10 might introduce value types. In that case this should be
- * converted to sucha value type that conists only of one integer (value).
- * 
  * @see SmallSet#toSet(int)
  * 
  * @author Claude Martin
  */
 public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte> {
-  private SmallSet value; // TODO : rename
+  private SmallSet set;
 
   public ByteSet(final SmallSet set) {
-    this.value = set;
+    this.set = set;
   }
 
   public boolean remove(byte element) {
-    return value != (value = value.remove(element));
+    return this.set != (this.set = this.set.remove(element));
   }
 
   @Override
@@ -42,7 +38,7 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   }
 
   public boolean add(byte e) {
-    return value != (value = value.add(e));
+    return this.set != (this.set = this.set.add(e));
   }
 
   @Override
@@ -52,38 +48,38 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
 
   @Override
   public void clear() {
-    value = SmallSet.empty();
+    this.set = SmallSet.empty();
   }
 
   public SmallSet toSmallSet() {
-    return this.value;
+    return this.set;
   }
 
   public boolean contains(final byte v) {
-    return this.value.contains(v);
+    return this.set.contains(v);
   }
 
   @Override
   public boolean contains(final Object o) {
     if (o instanceof Byte)
-      return this.value.contains((byte) o);
+      return this.set.contains((byte) o);
     return false;
   }
 
   @Override
   public boolean isEmpty() {
-    return this.value.isEmpty();
+    return this.set.isEmpty();
   }
 
   @Override
   public void forEach(final Consumer<? super Byte> action) {
-    this.value.forEach((ByteConsumer) action::accept);
+    this.set.forEach((ByteConsumer) action::accept);
   }
   
   @Override
   public ByteIterator iterator() {
     return new ByteIterator() {
-      private SmallSet  _set       = ByteSet.this.value;
+      private SmallSet  _set       = ByteSet.this.set;
       private byte      _lastValue = -1;
 
       @Override
@@ -104,7 +100,7 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
       public void remove() {
         if (_lastValue == -1)
           throw new IllegalStateException();
-        ByteSet.this.value = ByteSet.this.value.remove(_lastValue);
+        ByteSet.this.set = ByteSet.this.set.remove(_lastValue);
         _lastValue = -1;
       }
     };
@@ -113,7 +109,7 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
 
   @Override
   public int size() {
-    return this.value.size();
+    return this.set.size();
   }
 
   /**
@@ -123,7 +119,7 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
    */
   @Override
   public int hashCode() {
-    return this.value.hashCode();
+    return this.set.hashCode();
   }
 
   /**
@@ -135,16 +131,16 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   @Override
   public boolean equals(Object o) {
     if (o instanceof ByteSet)
-      return this.value == ((ByteSet) o).value;
+      return this.set == ((ByteSet) o).set;
     if (o instanceof Set) {
       try {
-        final Set<Byte> set = ((Set<Byte>) o);
+        final Set<Byte> _set = ((Set<Byte>) o);
         SmallSet other = SmallSet.empty();
-        if (this.size() != set.size())
+        if (this.size() != _set.size())
           return false;
-        for (Byte b : set)
+        for (Byte b : _set)
           other = other.add(b);
-        return other == this.value;
+        return other == this.set;
       } catch (ClassCastException | IllegalArgumentException e) {
         return false;
       }
@@ -154,7 +150,7 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
 
   @Override
   public ByteSet clone() {
-    return new ByteSet(value);
+    return new ByteSet(this.set);
   }
 
   public Comparator<? super Byte> comparator() {
@@ -162,51 +158,51 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   }
 
   public OptionalByte first() {
-    return this.value.min();
+    return this.set.min();
   }
 
   public OptionalByte last() {
-    return this.value.max();
+    return this.set.max();
   }
 
   public OptionalByte lower(final Byte e) {
-    return value.lower(e);
+    return this.set.lower(e);
   }
 
   public OptionalByte floor(final Byte e) {
-    return value.floor(e);
+    return this.set.floor(e);
   }
 
   public OptionalByte ceiling(final Byte e) {
-    return value.ceiling(e);
+    return this.set.ceiling(e);
   }
 
   public OptionalByte higher(final Byte e) {
-    return value.higher(e);
+    return this.set.higher(e);
   }
 
   public OptionalByte pollFirst() {
-    if (value.isEmpty())
+    if (this.set.isEmpty())
       return OptionalByte.empty();
-    final byte first = (byte) Integer.numberOfTrailingZeros(this.value.value);
-    value = value.remove(first);
+    final byte first = (byte) Integer.numberOfTrailingZeros(this.set.value);
+    this.set = this.set.remove(first);
     return OptionalByte.of(first);
   }
 
   public OptionalByte pollLast() {
-    if (value.isEmpty())
+    if (this.set.isEmpty())
       return OptionalByte.empty();
-    final byte last = (byte) (31 - Integer.numberOfLeadingZeros(this.value.value));
-    value = value.remove(last);
+    final byte last = (byte) (31 - Integer.numberOfLeadingZeros(this.set.value));
+    this.set = this.set.remove(last);
     return OptionalByte.of(last);
   }
 
   @Override
   public Byte[] toArray() {
-    final int size = this.value.size();
+    final int size = this.set.size();
     final Byte[] result = new Byte[size];
     int i = 0;
-    for (Byte n : this.value) {
+    for (Byte n : this.set) {
       result[i++] = n;
     }
     return result;
