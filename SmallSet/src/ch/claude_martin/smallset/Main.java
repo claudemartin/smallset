@@ -1,14 +1,16 @@
 package ch.claude_martin.smallset;
 
+import java.util.List;
+
 // This only exists because Valhalla is early alpha and I don't use an IDE or JUNit for tests.
 
 public class Main {
     public static void main(String[] args) {
         System.out.println("Here we create sets and use them like values.");
-        System.out.println("But Java can actually inline them so they are like primitive integers.");
+        System.out.println("But Java can actually use them like primitive integers.");
         final var set1 = SmallSet.of(1,2,3);
         System.out.println(set1);
-
+        
         System.out.println(set1.compareTo(set1));
 
         final var set2 = SmallSet.of(7,6,5);
@@ -23,7 +25,7 @@ public class Main {
         System.out.println(new Object[]{set1, set2});
         System.out.println("'Q' seems to be for inline classes while 'L' is the FieldType term for 'reference'.");
         // See: '4.3. Descriptors' in the lastest JLS. 
-        // https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-4.html#jvms-4.3
+        // https://docs.oracle.com/javase/specs/jvms/se20/html/jvms-4.html#jvms-4.3
         
         System.out.println();
         System.out.println("Filtered power set:");
@@ -32,8 +34,8 @@ public class Main {
         System.out.println();
 
         System.out.println();
-        System.out.println("You can even use it like an object:");
-        final Object o = set1; // This must be an 'indirect projection'
+        System.out.println("You can still use it as a referenced object:");
+        final SmallSet.ref o = set1; // Now it's in the heap memory
         System.out.println(o); // custom toString implementation
         // Automatically generated code for hashCode and equals:
         System.out.println(o.hashCode()); // based on the 'value' field

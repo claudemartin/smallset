@@ -1,8 +1,10 @@
 package ch.claude_martin.smallset;
 
 import java.util.AbstractCollection;
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -11,9 +13,9 @@ import java.util.function.Consumer;
 
 /**
  * A mutable, navigable view of a bit set. Basic operations are done with the
- * given integer value. This does not implement {@link NavigableSet} but has
- * many methods similar to those from that interface. This implementation is not
- * thread-safe.
+ * given {@link SmallSet} value. This does not (yet) implement {@link NavigableSet} but
+ * has many methods similar to those from that interface. This implementation is
+ * not thread-safe.
  * 
  * @see SmallSet#toSet(int)
  * 
@@ -75,12 +77,12 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   public void forEach(final Consumer<? super Byte> action) {
     this.set.forEach((ByteConsumer) action::accept);
   }
-  
+
   @Override
   public ByteIterator iterator() {
     return new ByteIterator() {
-      private SmallSet  _set       = ByteSet.this.set;
-      private byte      _lastValue = -1;
+      private SmallSet _set       = ByteSet.this.set;
+      private byte     _lastValue = -1;
 
       @Override
       public boolean hasNext() {
@@ -113,13 +115,18 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   }
 
   /**
-   * Returns the hash code value for this set.
+   * Returns the hash code value for this set that is compatible with
+   * {@link Set#hashCode()}
    * 
    * @see Set#hashCode()
    */
   @Override
   public int hashCode() {
-    return this.set.hashCode();
+    int h = 0;
+    int value = this.set.value;
+    for (byte n; value != 0; value &= ~(1 << n))
+      h += Byte.hashCode(n = (byte) Integer.numberOfTrailingZeros(value));
+    return h;
   }
 
   /**
@@ -195,6 +202,64 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
     final byte last = (byte) (31 - Integer.numberOfLeadingZeros(this.set.value));
     this.set = this.set.remove(last);
     return OptionalByte.of(last);
+  }
+
+  /**
+   * Returns a view of the portion of this set whose elements range from
+   * {@code fromElement}, inclusive, to {@code toElement}, exclusive.
+   * 
+   * @param fromElement
+   *                      low endpoint (inclusive) of the returned set
+   * @param toElement
+   *                      high endpoint (exclusive) of the returned set
+   */
+  public Set<Byte> subSet(byte fromElement, byte toElement) {
+    if (fromElement == 0 && toElement == Integer.SIZE)
+      return this;
+    if (fromElement > toElement)
+      throw new IllegalArgumentException("fromElement > toElement");
+    if (fromElement < 0)
+      throw new IllegalArgumentException("fromElement < 0");
+    if (toElement > Integer.SIZE)
+      throw new IllegalArgumentException("toElement > " + Integer.SIZE);
+    return new AbstractSet<Byte>() {
+      private final SmallSet range = SmallSet.ofRange(fromElement, toElement);
+
+      private SmallSet getSmallSet() {
+        return ByteSet.this.set.intersect(range);
+      }
+
+      @Override
+      public int size() {
+        return getSmallSet().size();
+      }
+
+      @Override
+      public Iterator<Byte> iterator() {
+        return getSmallSet().iterator();
+      }
+    };
+  }
+
+  /**
+   * Returns a view of the portion of this set whose elements are strictly less
+   * than {@code toElement}.
+   * 
+   * @param toElement
+   *                    toElement high endpoint (exclusive) of the returned set
+   */
+  public Set<Byte> headSet(byte toElement) {
+    return subSet((byte) 0, toElement);
+  }
+
+  /**
+   * Returns a view of the portion of this set whose elements are greater than or
+   * equal to {@code fromElement}.
+   * 
+   * @param fromElement fromElement low endpoint (inclusive) of the returned set
+   */
+  public Set<Byte> tailSet(byte fromElement) {
+    return subSet((byte) fromElement, (byte) Integer.SIZE);
   }
 
   @Override

@@ -1,4 +1,4 @@
-SET JAVA_HOME=C:\Program Files\Java\jdk-14-valhalla
+SET JAVA_HOME=C:\Program Files\Java\java-20-valhalla
 
 REM Sadly, this doesn't work for some reason.
 

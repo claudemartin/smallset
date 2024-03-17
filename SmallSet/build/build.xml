@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="SmallSet">
-  <property name="target" value="14" />
-  <property name="source" value="14" />
+  <property name="target" value="20" />
+  <property name="source" value="20" />
 
   <target name="clean">
     <delete dir="../bin" />
     <mkdir dir="../bin" />
-  </target>
+    <mkdir dir="../lib" />
+  </target>	
 
   <target name="compile">
+     <echo>Java/JVM version: ${ant.java.version}</echo> 
+     <echo>Java/JVM detail version: ${java.version}</echo> 
     <javac debug="true" destdir="../bin" srcdir="../src" includeantruntime="false" source="${source}" target="${target}" >
+      <compilerarg value="-XDenablePrimitiveClasses"/>
       <!-- Tests would require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": -->
        <classpath><fileset dir="../lib"><include name="**/*.jar" /></fileset></classpath> 
     </javac>
@@ -28,7 +32,8 @@
         <attribute name="Implementation-Time" value="${TIME}" />
         <attribute name="Implementation-Title" value="${ant.project.name}" />
         <attribute name="Implementation-Vendor" value="Claude Martin" />
-        <attribute name="Implementation-Vendor-URL" value="http://claude-martin.ch/" />
+        <attribute name="Implementation-Vendor-URL" value="https://claude-martin.ch/" />
+        <attribute name="Main-Class" value="ch.claude_martin.smallset.Main" />
       </manifest>
     </jar>
 
@@ -52,8 +57,8 @@
 
   <target name="test">
   <!-- Sadly, this doesn't find my tests. I don't know why. See "test.bat".-->
-    <!-- <java jar="../lib/junit-platform-console-standalone-1.6.2.jar" classpath="../bin" fork="true"> -->
-    <java classpath="../bin;../lib/junit-platform-console-standalone-1.6.2.jar" classname="org.junit.platform.console.ConsoleLauncher" fork="true">
+    <java classpath="../bin;../lib/junit-platform-console-standalone-1.10.2.jar" classname="org.junit.platform.console.ConsoleLauncher" fork="true">
+      <jvmarg value="-XX:+EnablePrimitiveClasses" />
       <!-- <arg value="-x-scan-classpath"/>  -->
       <arg value="--select-class=ch.claude_martin.smallset.SmallSetTest"/>
       <arg value="--fail-if-no-tests"/>
@@ -62,7 +67,9 @@
   </target>
 
   <target name="run">
-    <java classpath="smallset.jar" classname="ch.claude_martin.smallset.Main"/>
+    <java classpath="smallset.jar" classname="ch.claude_martin.smallset.Main" fork="true">
+      <jvmarg value="-XX:+EnablePrimitiveClasses" />
+    </java>
   </target>
 
 </project>

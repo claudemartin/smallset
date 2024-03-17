@@ -11,7 +11,7 @@ import java.util.function.UnaryOperator;
 /**
  * A container object which may or may not contain a {@code byte} value.
  */
-public inline class OptionalByte {
+public primitive class OptionalByte {
   private static final OptionalByte EMPTY = new OptionalByte();
 
   private final boolean             isPresent;

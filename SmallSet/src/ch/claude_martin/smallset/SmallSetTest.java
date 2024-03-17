@@ -5,10 +5,17 @@ import static ch.claude_martin.smallset.SmallSetTest.Alphabet.*;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
@@ -130,32 +137,15 @@ public class SmallSetTest {
     assertFalse(set.contains((byte) 4));
 
     for (byte i : BAD_VALUES) {
-      try {
-        empty().contains(i);
-        fail("" + i);
-      } catch (Exception e) {
-        // expected
-      }
+      assertThrows(IllegalArgumentException.class, () -> empty().contains(i), Byte.toString(i));
     }
     {
       EnumSet<Alphabet> bert = EnumSet.of(B, E, R, T);
       for (Enum<Alphabet> e : bert)
         assertEquals(bert.contains(e), of(bert).contains(e));
-
-      try {
-        of(1, 2, 3).contains(null);
-        fail("contains( , null)");
-      } catch (NullPointerException e) {
-        // excepted
-      }
+      assertFalse(bert.contains(X));
     }
-
-    try {
-      set.contains(null);
-      fail();
-    } catch (NullPointerException e) {
-      // expected
-    }
+    assertThrows(NullPointerException.class, () -> set.contains(null));
   }
 
   @Test
@@ -352,35 +342,12 @@ public class SmallSetTest {
         assertEquals(expected, actual, msg);
       }
 
-    try {
-      ofRange(0, 0);
-      fail("0,0");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    assertEquals(SmallSet.empty(), ofRange(0, 0));
+    assertEquals(SmallSet.empty(), ofRange(5, 5));
 
-    try {
-      ofRange(5, 5);
-      fail("5,5");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-
-    try {
-      ofRange(5, 2);
-      fail("5,2");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-
-    for (Byte b : BAD_VALUES) {
-      try {
-        ofRange(b, 32);
-        fail("" + b);
-      } catch (Exception e) {
-        // expected
-      }
-    }
+    assertThrows(IllegalArgumentException.class, () -> ofRange(5, 2), "ofRange(5, 2)");
+    assertThrows(IllegalArgumentException.class, () -> ofRange(-1, 32), "ofRange(-1, 32)");
+    assertThrows(IllegalArgumentException.class, () -> ofRange(0, 33), "ofRange(0, 33)");
   }
 
   @Test
@@ -427,6 +394,7 @@ public class SmallSetTest {
     assertEquals("()", empty().toString());
     assertEquals("(5)", of(5).toString());
     assertEquals("(5,31)", of(5, 31).toString());
+    assertEquals("(1,2,3,5,9,17,31)", of(1, 2, 3, 5, 9, 17, 31).toString());
   }
 
   @Test
@@ -437,8 +405,31 @@ public class SmallSetTest {
     assertEquals(Collections.EMPTY_SET, empty().toSet());
     assertEquals(new HashSet<>(asList(_1, _5)), of(1, 5).toSet());
     assertEquals(Set.of(_0, _1, _5), of(0, 1, 5).toSet());
-    for (byte i = 0; i < 32; i++)
+    assertEquals(Set.of(_0, _5).hashCode(), of(0, 5).toSet().hashCode());
+    for (byte i = 0; i < 32; i++) {
       assertEquals(new TreeSet<>(asList(i)), singleton(i).toSet());
+      assertEquals(Set.of(i).hashCode(), singleton(i).toSet().hashCode());
+    }
+    for (byte i = 0; i < 32; i++) {
+      for (byte j = 0; j < 32; j++) {
+        if (i == j)
+          continue;
+        final var set = SmallSet.empty().toSet();
+        assertEquals(Set.of(), set);
+        assertEquals(Set.of().hashCode(), set.hashCode());
+        set.add(i);
+        assertEquals(Set.of(i), set);
+        assertEquals(of(i).toSet(), set);
+        assertEquals(Set.of(i).hashCode(), set.hashCode());
+        set.add(j);
+        assertEquals(Set.of(i, j), set);
+        assertEquals(of(i, j).toSet(), set);
+        assertEquals(Set.of(i, j).hashCode(), set.hashCode());
+        assertEquals(of(i, j).toSet(), of(i, j).toSet().subSet((byte) 0, (byte) 32));
+        assertEquals(empty().toSet(), of(i, j).toSet().subSet((byte) 8, (byte) 8));
+        assertEquals(new TreeSet<>(Set.of(i, j)).subSet((byte) 7, (byte) 15), of(i, j).toSet().subSet((byte) 7, (byte) 15));
+      }
+    }
   }
 
   @Test
@@ -458,23 +449,25 @@ public class SmallSetTest {
     for (int i = 0; i < 100; i++)
       assertTrue(set.contains(set.random(rng)));
 
+    for (byte v : set)
+      assertTrue(findRandom(rng, set, v));
+    
+    for (byte v = 0; v < Integer.SIZE; ++v)
+      assertTrue(findRandom(rng, SmallSet.empty().complement(), v));
+
     assertEquals(0, singleton(0).random(rng));
-
-    try {
-      empty().random(rng);
-      fail();
-    } catch (NoSuchElementException e) {
-      // expected
-    }
-
-    try {
-      of(5).random(null);
-      fail();
-    } catch (NullPointerException e) {
-      // expected
-    }
+    
+    assertThrows(NoSuchElementException.class, () -> empty().random(rng));
+    assertThrows(NullPointerException.class, () -> of(5).random(null));
   }
-
+  
+  private boolean findRandom(Random rng, SmallSet set, byte value) {
+    for (int i = 0; i < set.size() * 10; i++)
+      if (set.random(rng) == value)
+        return true;
+    throw new AssertionError(set + ".random(rng) never returned the value " + value);
+  }
+  
   public static enum Alphabet {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z;
   }
@@ -529,6 +522,8 @@ public class SmallSetTest {
   public void testMinus() throws Exception {
     final SmallSet minus = of(1, 2, 3, 4).minus(of(2, 3));
     assertEquals(of(1, 4), minus);
+    assertEquals(of(1, 4), of(1, 4).minus(empty()));
+    assertEquals(of(), empty().minus(of(8, 9)));
   }
 
   @Test
@@ -544,7 +539,7 @@ public class SmallSetTest {
     set.clear();
     empty().forEach(set::add);
     assertEquals(empty().toSet(), set);
-    
+
     empty().forEach(n -> fail("iteration on empty set"));
   }
 
@@ -579,6 +574,10 @@ public class SmallSetTest {
     }
     { // sequential [ x | 10 divides x ]:
       final SmallSet by10 = collect(all.intStream().filter(x -> x % 10 == 0));
+      assertEquals(of(asList(0, 10, 20, 30)), by10);
+    }
+    { // sequential [ x | 10 divides x ]:
+      final SmallSet by10 = collect(all.intStream().filter(x -> x % 10 == 0).mapToObj(Double::valueOf));
       assertEquals(of(asList(0, 10, 20, 30)), by10);
     }
 
@@ -643,9 +642,13 @@ public class SmallSetTest {
           if (k == i || k == j)
             continue;
           SmallSet set3 = of(i, j, k);
-          // TODO: The next line would cause the JVM to crash (JDK 14 + valhalla).
-          // set3.sum() is what actually cases the crash when inlined!
-          // assertEquals(i + j + k, set3.sum(), set3.toString());
+          assertEquals(i + j + k, set3.sum(), set3.toString());
+          for (int l = 0; l < 32; l++) {
+            if (l == i || l == j || l == k)
+              continue;
+            SmallSet set4 = of(i, j, k, l);
+            assertEquals(i + j + k + l, set4.sum(), set4.toString());
+          }
         }
       }
     }
@@ -789,20 +792,21 @@ public class SmallSetTest {
 
   @Test
   public void testPowerset() throws Exception {
-    final var toSet = Collectors.<SmallSet?>toSet();
+    final var toSet = Collectors.<SmallSet.ref> toSet();
     // Very large result, but this should be lazy:
-    empty().complement().powerset().peek(x -> {});
+    empty().complement().powerset().peek(x -> {
+    });
 
     SmallSet set = empty();
-    Stream<SmallSet?> ps = set.powerset();
-    assertEquals(new HashSet<SmallSet?>(Arrays.<SmallSet?>asList(empty())), ps.collect(toSet));
-    Set<SmallSet?> collected;
+    Stream<SmallSet.ref> ps = set.powerset();
+    assertEquals(new HashSet<SmallSet.ref>(Arrays.<SmallSet.ref> asList(empty())), ps.collect(toSet));
+    Set<SmallSet.ref> collected;
 
     for (int i : asList(0, 5, 31)) {
       set = singleton(i);
       ps = set.powerset();
       collected = ps.collect(toSet);
-      assertEquals(new HashSet<SmallSet?>(Arrays.<SmallSet?>asList(empty(), singleton(i))), collected);
+      assertEquals(new HashSet<SmallSet.ref>(Arrays.<SmallSet.ref> asList(empty(), singleton(i))), collected);
     }
 
     set = of(7, 12, 31);
@@ -822,6 +826,47 @@ public class SmallSetTest {
     set = of(0, 3, 5, 7, 11, 13, 31);
     ps = set.powerset();
     assertEquals(1 << set.size(), ps.distinct().count());
+  }
 
+  @Test
+  public void testSerializable() throws Exception {
+    {
+      final var set = of(7, 12, 31);
+      final var copy = copyOfBoxed(set);
+      assertEquals(set, copy);
+      System.out.println("Copy of boxed: " + copy);
+    }
+    {
+      final var set = of(0, 7, 13);
+      final var copy = copyOfPrimitive(set);
+      assertEquals(set, copy);
+      System.out.println("Copy of primitive: " + copy);
+    }
+  }
+
+  private SmallSet.ref copyOfBoxed(SmallSet.ref original) throws Exception {
+    final var bos = new ByteArrayOutputStream();
+    final var out = new ObjectOutputStream(bos);
+    out.writeObject(original);
+    final var bis = new ByteArrayInputStream(bos.toByteArray());
+    final var in = new ObjectInputStream(bis);
+    final SmallSet.ref copy = (SmallSet.ref) in.readObject();
+    return copy;
+  }
+
+  static record SmallSetHolder(SmallSet set) implements Serializable { 
+    // TODO : It should not be required to use an object to serialize a primitive
+  }
+
+  /** This fails at the moment. The preview based on Java 20 can't compute the correct offsets. */
+  private SmallSet copyOfPrimitive(SmallSet original) throws Exception {
+    final var bos = new ByteArrayOutputStream();
+    final var out = new ObjectOutputStream(bos);
+    final var holder = new SmallSetHolder(original);
+    out.writeObject(holder);
+    final var bis = new ByteArrayInputStream(bos.toByteArray());
+    final var in = new ObjectInputStream(bis);
+    final SmallSetHolder copy = (SmallSetHolder) in.readObject();
+    return copy.set;
   }
 }

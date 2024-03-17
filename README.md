@@ -12,7 +12,7 @@ I did this when I had an assignment for a sudoku solver/generator. I needed a fa
 
 An int only allows 32 values (0 to 31), but it would be easy to switch to long. That would be mostly search/replace. The elements in the set would still be bytes. But don't forget to replace `1` by `1L`. 
 
-Newer versions of Java might support value types (cf [http://cr.openjdk.java.net/~jrose/values/values-0.html]) . Then this can be changed to such a value type and the methods would not need to be static. 
+Newer versions of Java might support value types (cf [http://cr.openjdk.java.net/~jrose/values/values-0.html] and [https://jdk.java.net/valhalla/]) . Then this can be changed to such a value type and the methods would not need to be static. 
 
 <h2>Example</h2>
 
@@ -43,4 +43,6 @@ Or browser the code. There are only 3 classes (plus a JUnit test class).
 
 <h2>Valhalla</h2>
 
-There's a branch for a version in which SmallSet in an `inline class`. It only works with a JDK that supports this. It's available as a preview but it's not officially released with any JDK yet. I expet that they will release a preview after the next LTS release (Java 17?) and will add it to a later LTS as an official feature of the Java language. 
+In this branch SmallSet is actually a primitive, so it is really an `int` but behaves like an object. It only works with a JDK that supports this. It's available as a preview but it's not officially released with any JDK yet. 
+
+Note that in many cases it will have to box the value. It's basically just an `int` but a `Stream<SmallSet.ref>` uses autoboxed objects. There is also no `Optional<SmallSet>` readily available that would not require an autoboxed object. 
