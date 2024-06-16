@@ -523,7 +523,7 @@ public class SmallSetTest {
     final SmallSet minus = of(1, 2, 3, 4).minus(of(2, 3));
     assertEquals(of(1, 4), minus);
     assertEquals(of(1, 4), of(1, 4).minus(empty()));
-    assertEquals(of(), empty().minus(of(8, 9)));
+    assertEquals(empty(), empty().minus(of(8, 9)));
   }
 
   @Test

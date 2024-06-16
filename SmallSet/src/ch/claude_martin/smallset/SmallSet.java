@@ -685,6 +685,14 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     return sb.toString();
   }
 
+  public String toBinaryString() {
+    return this.toBinaryString(Integer.SIZE);
+  }
+  
+  public String toBinaryString(int width) {
+    return String.format("%" + width + "s", Integer.toBinaryString(this.value)).replace(" ", "0");
+  }
+  
   /** Creates a mutable {@link ByteSet} of the set. */
   public ByteSet toSet() {
     return new ByteSet(this);
