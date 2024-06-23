@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Primitive class for sets of small integers (bytes in the range of 0 to 31),
+ * Primitive class for sets of small integers (in the range of 0 to 31),
  * represented as bit fields (int).
  * 
  * <p>
@@ -83,6 +83,12 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
       throw new IllegalArgumentException("out of range: i<0");
 
     return n.byteValue();
+  }
+  
+  /** Empty set. 
+   * @see #empty()*/
+  public static SmallSet of() {
+    return EMPTY;
   }
 
   /**
@@ -432,8 +438,12 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     if (this.isEmpty())
       return this;
     SmallSet result = empty();
-    for (var itr = this.iterator(); itr.hasNext();) 
-      result = result.add((byte) checkRange(operator.applyAsInt(itr.nextByte())));
+    var copy = this;
+    while (!copy.isEmpty()) {
+      var next = next(copy.value);
+      copy = copy.remove(next);
+      result = result.add((byte) checkRange(operator.applyAsInt(next)));
+    }
     return result;
   }
 
@@ -472,8 +482,9 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    */
   public void forEach(final ByteConsumer action) {
     requireNonNull(action, "action");
-    for (var itr = this.iterator(); itr.hasNext();) 
-      action.accept(itr.nextByte());
+    var copy = this;
+    while (!copy.isEmpty())
+      copy = copy.next(action);
   }
 
   /**
@@ -695,8 +706,10 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     final int size = this.size();
     final byte[] result = new byte[size];
     int i = 0;
-    for (var itr = this.iterator(); itr.hasNext();) 
-      result[i++] = itr.nextByte();
+    var copy = this;
+    while (!copy.isEmpty()) {
+      copy = copy.remove(result[i++] = SmallSet.next(copy.value));
+    }
     return result;
   }
 
@@ -721,6 +734,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     if (this.isEmpty())
       throw new NoSuchElementException("empty set");
     final byte next = next(this.value);
+    assert next >= 0 && next < 32;
     consumer.accept(next);
     return new SmallSet(this.value & ~(1 << next));
   }

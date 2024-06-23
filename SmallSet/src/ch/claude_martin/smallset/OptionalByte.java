@@ -4,9 +4,11 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
 /**
  * A container object which may or may not contain a {@code byte} value.
@@ -66,10 +68,22 @@ public primitive class OptionalByte {
   public boolean isPresent() {
     return isPresent;
   }
+  
+  public boolean isEmpty() {
+    return !isPresent;
+  }
 
   public void ifPresent(ByteConsumer consumer) {
     if (isPresent)
       consumer.accept(value);
+  }
+  
+  public void ifPresentOrElse(IntConsumer action, Runnable emptyAction) {
+    if (isPresent) {
+      action.accept(value);
+    } else {
+      emptyAction.run();
+    }
   }
 
   public int orElse(byte other) {
@@ -87,22 +101,32 @@ public primitive class OptionalByte {
       throw exceptionSupplier.get();
     }
   }
+  
+  public int orElseThrow() {
+    if (!isPresent) {
+      throw new NoSuchElementException("No value present");
+    }
+    return value;
+  }
 
+  public IntStream stream() {
+    return isPresent ? IntStream.of(value) : IntStream.empty();
+  }
+  
   @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;
 
-    if (!(obj instanceof OptionalByte))
-      return false;
-
-    OptionalByte other = (OptionalByte) obj;
-    return (isPresent && other.isPresent) ? value == other.value : isPresent == other.isPresent;
+    if (obj instanceof OptionalByte other)
+      return (isPresent && other.isPresent) ? value == other.value : isPresent == other.isPresent;
+      
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return isPresent ? Integer.hashCode(value) : 0;
+    return value;
   }
 
   @Override

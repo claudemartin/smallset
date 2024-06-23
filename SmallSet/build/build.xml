@@ -12,7 +12,9 @@
   <target name="compile">
      <echo>Java/JVM version: ${ant.java.version}</echo> 
      <echo>Java/JVM detail version: ${java.version}</echo> 
-    <javac debug="true" destdir="../bin" srcdir="../src" includeantruntime="false" source="${source}" target="${target}" >
+    <javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}" >
+      <src path="../src"/>
+      <src path="../test"/>
       <compilerarg value="-XDenablePrimitiveClasses"/>
       <!-- Tests would require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": -->
        <classpath><fileset dir="../lib"><include name="**/*.jar" /></fileset></classpath> 
