@@ -39,8 +39,6 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
   }
 
   /**
-   * {@inheritDoc}
-   * 
    * @implSpec The default implementation boxes the result of calling {@link #nextByte()}, and
    *           returns that boxed result.
    */
@@ -50,8 +48,6 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
   }
 
   /**
-   * {@inheritDoc}
-   * 
    * @implSpec If the action is an instance of {@code ByteConsumer} then it is cast to
    *           {@code ByteConsumer} and passed to {@link #forEachRemaining}; otherwise the action is
    *           adapted to an instance of {@code ByteConsumer}, by boxing the argument of
@@ -59,10 +55,9 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
    */
   @Override
   default void forEachRemaining(final Consumer<? super Byte> action) {
-    if (action instanceof ByteConsumer)
-      forEachRemaining((ByteConsumer) action);
+    if (action instanceof ByteConsumer c)
+      forEachRemaining(c);
     else {
-      // The method reference action::accept is never null
       Objects.requireNonNull(action);
       forEachRemaining((ByteConsumer) action::accept);
     }

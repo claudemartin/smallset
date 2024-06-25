@@ -47,7 +47,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
 
   /** Creates a set from a bitset value. Not to be confused with {@link #singleton(int)} 
    * or {@link #of(byte...)}. */
-  public SmallSet(int value) { //TODO make private 
+  SmallSet(int value) { 
     // All integer values are legal. We can't check anything here.
     this.value = value;
   }
@@ -99,8 +99,8 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    */
   public static SmallSet of(final Iterable<? extends Number> values) {
     requireNonNull(values, "values");
-    if (values instanceof ByteSet)
-      return ((ByteSet) values).toSmallSet();
+    if (values instanceof ByteSet bs)
+      return bs.toSmallSet();
     int set = 0;
     for (final Number n : values) {
       requireNonNull(n, "values must not contain null");
@@ -857,6 +857,8 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     } else if (size == 2) {
       // two values -> check leading/trailing zeroes:
       return Integer.numberOfTrailingZeros(this.value) + (31 - Integer.numberOfLeadingZeros(this.value));
+    } else if (size == 32) {
+      return 496;
     } else {
       if (size > 16) // then the complement has fewer values to count:
         return 496 - this.complement().sum();

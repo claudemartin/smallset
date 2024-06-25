@@ -44,7 +44,29 @@ public interface ByteConsumer extends Consumer<Byte> {
    * @throws NullPointerException
    *           if {@code after} is null
    */
-  default ByteConsumer andThen(final IntConsumer after) {
+  default ByteConsumer andThenInt(final IntConsumer after) {
+    Objects.requireNonNull(after);
+    return (final byte b) -> {
+      accept(b);
+      after.accept(b);
+    };
+  }
+  
+  /**
+   * Returns a composed {@code ByteConsumer} that performs, in sequence, this
+   * operation followed by the {@code after} operation. If performing either
+   * operation throws an exception, it is relayed to the caller of the composed
+   * operation. If performing this operation throws an exception, the
+   * {@code after} operation will not be performed.
+   *
+   * @param after
+   *          the operation to perform after this operation
+   * @return a composed {@code ByteConsumer} that performs in sequence this
+   *         operation followed by the {@code after} operation
+   * @throws NullPointerException
+   *           if {@code after} is null
+   */
+  default ByteConsumer andThen(final ByteConsumer after) {
     Objects.requireNonNull(after);
     return (final byte b) -> {
       accept(b);

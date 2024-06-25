@@ -13,9 +13,9 @@ import java.util.function.Consumer;
 
 /**
  * A mutable, navigable view of a bit set. Basic operations are done with the
- * given {@link SmallSet} value. This does not (yet) implement {@link NavigableSet} but
- * has many methods similar to those from that interface. This implementation is
- * not thread-safe.
+ * given {@link SmallSet} value. This does not (yet) implement
+ * {@link NavigableSet} but has many methods similar to those from that
+ * interface. This implementation is not thread-safe.
  * 
  * @see SmallSet#toSet(int)
  * 
@@ -24,27 +24,48 @@ import java.util.function.Consumer;
 public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte> {
   private SmallSet set;
 
+  /** Creates an empty set. */
+  public ByteSet() {
+  }
+
+  /** Creates a set containing the same values as the given set. */
   public ByteSet(final SmallSet set) {
     this.set = set;
   }
 
+  private static boolean outOfRange(byte b) {
+    return b < 0 || b > 31;
+  }
+
+  /**
+   * Removes the given byte. This does nothing and returns false if the given
+   * value is below 0 or greater than 31.
+   */
   public boolean remove(byte element) {
+    if (outOfRange(element))
+      return false;
     return this.set != (this.set = this.set.remove(element));
   }
 
+  /**
+   * Removes the given element. Note that this will only remove Bytes, but not
+   * instances of {@link Integer} or other {@link Number}s. This does nothing
+   * and returns false, if the given value is below 0 or greater than 31.
+   * {@inheritDoc}
+   */
   @Override
   public boolean remove(Object o) {
-    if (o instanceof Byte)
-      return remove((byte) o);
+    if (o instanceof Byte b && !outOfRange(b))
+      return remove((byte) b);
     return false;
   }
 
-  public boolean add(byte e) {
+  public boolean add(byte e) throws IllegalArgumentException {
     return this.set != (this.set = this.set.add(e));
   }
 
   @Override
-  public boolean add(Byte e) {
+  public boolean add(Byte e) throws IllegalArgumentException {
     return add((byte) e);
   }
 
@@ -58,13 +79,15 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   }
 
   public boolean contains(final byte v) {
+    if (outOfRange(v))
+      return false;
     return this.set.contains(v);
   }
 
   @Override
   public boolean contains(final Object o) {
-    if (o instanceof Byte)
-      return this.set.contains((byte) o);
+    if (o instanceof Byte b && !outOfRange(b))
+      return this.set.contains(b);
     return false;
   }
 
@@ -130,27 +153,25 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
   }
 
   /**
-   * Compares the specified object with this set for equality.
+   * Compares the specified object with this set for equality. The two sets can
+   * only be equal if both contain the same Byte objects.
    * 
    * @see Set#equals(Object)
    */
-  @SuppressWarnings("unchecked")
   @Override
   public boolean equals(Object o) {
-    if (o instanceof ByteSet)
-      return this.set == ((ByteSet) o).set;
-    if (o instanceof Set) {
-      try {
-        final Set<Byte> _set = ((Set<Byte>) o);
-        SmallSet other = SmallSet.empty();
-        if (this.size() != _set.size())
-          return false;
-        for (Byte b : _set)
-          other = other.add(b);
-        return other == this.set;
-      } catch (ClassCastException | IllegalArgumentException e) {
+    if (o instanceof ByteSet bs)
+      return this.set == bs.set;
+    if (o instanceof Set<?> other) {
+      if (this.size() != other.size())
         return false;
+      for (Object e : other) {
+        if (e instanceof Byte b && this.set.contains(b))
+          continue;
+        else
+          return false;
       }
+      return true;
     }
     return false;
   }
@@ -209,9 +230,9 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
    * {@code fromElement}, inclusive, to {@code toElement}, exclusive.
    * 
    * @param fromElement
-   *                      low endpoint (inclusive) of the returned set
+   *          low endpoint (inclusive) of the returned set
    * @param toElement
-   *                      high endpoint (exclusive) of the returned set
+   *          high endpoint (exclusive) of the returned set
    */
   public Set<Byte> subSet(byte fromElement, byte toElement) {
     if (fromElement == 0 && toElement == Integer.SIZE)
@@ -235,8 +256,45 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
       }
 
       @Override
+      public boolean add(Byte b) {
+        Objects.requireNonNull(b);
+        if (range.contains(b))
+          return ByteSet.this.add(b);
+        throw new IllegalArgumentException("Can't add " + b + ". Value is out of range.");
+      }
+
+      @Override
+      public boolean remove(Object o) {
+        Objects.requireNonNull(o);
+        if (o instanceof Byte b && range.contains(b))
+          return ByteSet.this.remove(b);
+        throw new IllegalArgumentException("Can't remove " + o + ". Value is out of range or not a byte.");
+      }
+
+      @Override
       public Iterator<Byte> iterator() {
-        return getSmallSet().iterator();
+        final var itr = getSmallSet().iterator();
+        return new Iterator<Byte>() {
+          Byte lastReturned = null;
+
+          @Override
+          public Byte next() {
+            return lastReturned = itr.next();
+          }
+
+          @Override
+          public boolean hasNext() {
+            return itr.hasNext();
+          }
+
+          @Override
+          public void remove() {
+            if (lastReturned == null)
+              throw new IllegalStateException("This iterator has no element to remove.");
+            ByteSet.this.remove(lastReturned);
+            lastReturned = null;
+          }
+        };
       }
     };
   }
@@ -246,17 +304,18 @@ public final class ByteSet extends AbstractCollection<Byte> implements Set<Byte>
    * than {@code toElement}.
    * 
    * @param toElement
-   *                    toElement high endpoint (exclusive) of the returned set
+   *          toElement high endpoint (exclusive) of the returned set
    */
   public Set<Byte> headSet(byte toElement) {
     return subSet((byte) 0, toElement);
   }
 
   /**
-   * Returns a view of the portion of this set whose elements are greater than or
-   * equal to {@code fromElement}.
+   * Returns a view of the portion of this set whose elements are greater than
+   * or equal to {@code fromElement}.
    * 
-   * @param fromElement fromElement low endpoint (inclusive) of the returned set
+   * @param fromElement
+   *          fromElement low endpoint (inclusive) of the returned set
    */
   public Set<Byte> tailSet(byte fromElement) {
     return subSet((byte) fromElement, (byte) Integer.SIZE);

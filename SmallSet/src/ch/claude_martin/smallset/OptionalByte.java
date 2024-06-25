@@ -126,12 +126,12 @@ public primitive class OptionalByte {
 
   @Override
   public int hashCode() {
-    return value;
+    return isPresent ? value : Integer.MIN_VALUE;
   }
 
   @Override
   public String toString() {
-    return isPresent ? String.format("OptionalInt[%s]", value) : "OptionalInt.empty";
+    return isPresent ? String.format("OptionalByte[%s]", value) : "OptionalByte.empty";
   }
 
   public <U> Optional<U> mapToObj(Function<Byte, ? extends U> mapper) {

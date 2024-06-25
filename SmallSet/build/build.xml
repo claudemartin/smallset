@@ -62,7 +62,7 @@
     <java classpath="../bin;../lib/junit-platform-console-standalone-1.10.2.jar" classname="org.junit.platform.console.ConsoleLauncher" fork="true">
       <jvmarg value="-XX:+EnablePrimitiveClasses" />
       <!-- <arg value="-x-scan-classpath"/>  -->
-      <arg value="--select-class=ch.claude_martin.smallset.SmallSetTest"/>
+      <arg value="--select-package=ch.claude_martin.smallset"/>
       <arg value="--fail-if-no-tests"/>
       <arg value="--reports-dir=reports"/>
     </java>

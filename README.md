@@ -1,18 +1,15 @@
 <h2>Abstract</h2>
-Methods to use an int as a bit set of small values. Uses 32 bits for a bit set and offers high performance for algorithms. Designed for Java 8 and compatible with common interfaces and classes.
-
-<h2>Download</h2>
-https://github.com/claudemartin/smallset/releases/tag/0.1
-
-<h2>Javadoc</h2>
-http://claude-martin.ch/smallset/doc/
+Methods to use an int as a bit set of small values. Uses 32 bits for a bit set and offers high performance for algorithms. Designed for Java Valhalla and compatible with many common interfaces and classes.
 
 <h2>About</h2>
 I did this when I had an assignment for a sudoku solver/generator. I needed a fast way to handle sets that could contain 1 to 9. Then I extended it with the common methods you'd need for a set. You can use this whenever you need some very fast way to handle sets of small integers.
 
+Later I migreted this to JDK 14 Valhalla preview. It wasn't stable enough as it crashed constantly.
+Some years later I tried again with JDK 20 Valhalla preview and not it works except for serialisation.
+
 An int only allows 32 values (0 to 31), but it would be easy to switch to long. That would be mostly search/replace. The elements in the set would still be bytes. But don't forget to replace `1` by `1L`. 
 
-Newer versions of Java might support value types (cf [http://cr.openjdk.java.net/~jrose/values/values-0.html] and [https://jdk.java.net/valhalla/]) . Then this can be changed to such a value type and the methods would not need to be static. 
+Newer versions of Java might support value types in Generics and I might update this once again.
 
 <h2>Example</h2>
 
@@ -20,29 +17,27 @@ Newer versions of Java might support value types (cf [http://cr.openjdk.java.net
 import static ch.claude_martin.smallset.SmallSet.*;
 import ch.claude_martin.smallset.SmallSet;
 // ...
-void static process(byte b) { // ...
+  SmallSet set = of(1,3,4,7); // [1,3,4,7]
+  set.add(9); // [1,3,4,7,9]
+  set = set.union(ofRange(12, 32)); // [1,3,4,7,9,12,...,31]
+  set.containsAll(List.of(3,7));// true
+  set = set.complement(); // [0,2,5,6,8,10,11]
+  System.out.println(set); // "(0,2,5,6,8,10,11)"
+  for(byte b : set) process(b);
+  set.forEach(b -> process(b)); 
+  int sum = set.sum(); // 42
+  sum = set.reduce(0, Integer::sum); // 42
+  sum = set.reduce(Integer::sum).orElse(0); // 42
 // ...
-  int set = of(1,3,4,7); // [1,3,4,7]
-  set = add(set, (byte) 9); // [1,3,4,7,9]
-  set = union(set, ofRange(12, 32)); // [1,3,4,7,9,12,...,31]
-  containsAll(set, Arrays.asList(3,7));// true
-  set = complement(set); // [0,2,5,6,8,10,11]
-  System.out.println(SmallSet.toString(set)); // "(0,2,5,6,8,10,11)"
-  for(byte b : iterate(set)) process(b);
-  forEach(set, b -> process(b)); 
-  int sum;
-  sum = reduce(set, 0, Integer::sum); // 42
-  sum = reduce(set, Integer::sum).orElse(0); // 42
-  sum = sum(set); // 42
+  void static process(byte b) { // ...
 ```
 
-Check out the javadoc for more methods:
-http://claude-martin.ch/smallset/doc/
+There's also a Main class that you can try out.
 
-Or browser the code. There are only 3 classes (plus a JUnit test class).
+<h2>Further Reading:</h2>
 
-<h2>Valhalla</h2>
+If you are interested in Project Valhalla I recommend you read this post on reddit that I wrote about this project here:  
+[r/java - I actually tested JDK 20 Valhalla, here are my findings](https://www.reddit.com/r/java/comments/1dnhgut/i_actually_tested_jdk_20_valhalla_here_are_my/)
 
-In this branch SmallSet is actually a primitive, so it is really an `int` but behaves like an object. It only works with a JDK that supports this. It's available as a preview but it's not officially released with any JDK yet. 
-
-Note that in many cases it will have to box the value. It's basically just an `int` but a `Stream<SmallSet.ref>` uses autoboxed objects. There is also no `Optional<SmallSet>` readily available that would not require an autoboxed object. 
+Or just read about the project here:  
+[openjdk.org - Project Valhalla](https://openjdk.org/projects/valhalla/)

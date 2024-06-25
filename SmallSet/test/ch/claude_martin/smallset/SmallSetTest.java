@@ -627,6 +627,7 @@ public class SmallSetTest {
 
     assertEquals(17, of(5, 12).sum());
     assertEquals(44, of(11, 30, 3).sum());
+    assertEquals(IntStream.range(0, 32).sum(), empty().complement().sum());
 
     for (int i = 0; i < 32; i++) {
       assertEquals(i, singleton(i).sum());
