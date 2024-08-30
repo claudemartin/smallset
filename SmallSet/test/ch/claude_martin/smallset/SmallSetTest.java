@@ -4,24 +4,18 @@ import static ch.claude_martin.smallset.SmallSet.*;
 import static ch.claude_martin.smallset.SmallSetTest.Alphabet.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.random.RandomGenerator;
+import java.util.stream.*;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -36,10 +30,11 @@ public class SmallSetTest {
 
   private static final List<Byte> BAD_VALUES = List.of((byte) -1, (byte) 32);
 
+  @SafeVarargs
   private static <T> T[] array(T... elements) {
     return elements;
   }
-  
+
   @Test
   public final void testOf() {
     SmallSet set = of(1, 2, 3, 31);
@@ -81,11 +76,11 @@ public class SmallSetTest {
         assertEquals(set, of(bs));
       }
     }
-    
+
     SmallSet empty = of();
     assertSame(empty, empty());
   }
-  
+
   @Test
   public final void testSingleton() {
     for (byte i = 0; i < 32; i++) {
@@ -267,7 +262,7 @@ public class SmallSetTest {
   @Test
   public final void testIntIterator() {
     final SmallSet set = of(1, 2, 3, 5, 7, 11, 13, 17, 31);
-    for (Function<OfInt, Integer> f : List.<Function<OfInt, Integer>>of(//
+    for (Function<OfInt, Integer> f : List.<Function<OfInt, Integer>> of(//
         OfInt::nextInt, OfInt::next)) {
       SmallSet out = empty();
       for (OfInt itr = set.intIterator(); itr.hasNext();) {
@@ -425,7 +420,8 @@ public class SmallSetTest {
         assertEquals(Set.of(i, j).hashCode(), set.hashCode());
         assertEquals(of(i, j).toSet(), of(i, j).toSet().subSet((byte) 0, (byte) 32));
         assertEquals(empty().toSet(), of(i, j).toSet().subSet((byte) 8, (byte) 8));
-        assertEquals(new TreeSet<>(Set.of(i, j)).subSet((byte) 7, (byte) 15), of(i, j).toSet().subSet((byte) 7, (byte) 15));
+        assertEquals(new TreeSet<>(Set.of(i, j)).subSet((byte) 7, (byte) 15),
+            of(i, j).toSet().subSet((byte) 7, (byte) 15));
       }
     }
   }
@@ -442,30 +438,53 @@ public class SmallSetTest {
 
   @Test
   public void testRandom() throws Exception {
-    final Random rng = new Random();
-    final SmallSet set = of(1, 3, 5);
+    // Not random at all, so we should always easily find each value
+    final var rng = new RandomGenerator() {
+      char next = 0;
+
+      @Override
+      public long nextLong() {
+        return next++;
+      }
+
+      @Override
+      public int nextInt(int bound) {
+        return next++ % bound;
+      }
+
+    };
+    final SmallSet set = of(1, 3, 5, 7, 11, 13);
     for (int i = 0; i < 100; i++)
       assertTrue(set.contains(set.random(rng)));
 
     for (byte v : set)
       assertTrue(findRandom(rng, set, v));
-    
-    for (byte v = 0; v < Integer.SIZE; ++v)
-      assertTrue(findRandom(rng, SmallSet.empty().complement(), v));
 
-    assertEquals(0, singleton(0).random(rng));
-    
-    assertThrows(NoSuchElementException.class, () -> empty().random(rng));
-    assertThrows(NullPointerException.class, () -> of(5).random(null));
+    final var fullSet = empty().complement();
+    for (byte v = 0; v < Integer.SIZE; ++v)
+      assertTrue(findRandom(rng, fullSet, v));
+
+    for (var r : List.of(rng, new Random(), new SecureRandom())) {
+      assertEquals(6, singleton(6).random(r));
+      assertThrows(NoSuchElementException.class, () -> empty().random(r));
+      assertThrows(NullPointerException.class, () -> of(5).random(null));
+    }
+
+    final var i = new AtomicInteger(0);
+    empty().random(rng, b -> i.incrementAndGet());
+    assertEquals(0, i.get());
+
+    set.random(rng, b -> i.incrementAndGet());
+    assertEquals(1, i.get());
   }
-  
-  private boolean findRandom(Random rng, SmallSet set, byte value) {
+
+  private boolean findRandom(RandomGenerator rng, SmallSet set, byte value) {
     for (int i = 0; i < set.size() * 10; i++)
       if (set.random(rng) == value)
         return true;
     throw new AssertionError(set + ".random(rng) never returned the value " + value);
   }
-  
+
   public static enum Alphabet {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z;
   }
@@ -826,13 +845,11 @@ public class SmallSetTest {
       final var set = of(7, 12, 31);
       final var copy = copyOfRef(set);
       assertEquals(set, copy);
-      System.out.println("Copy of boxed: " + copy);
     }
     {
       final var set = of(0, 7, 13);
       final var copy = copyOfPrimitiveSmallSetInRecord(set);
       assertEquals(set, copy);
-      System.out.println("Copy of primitive: " + copy);
     }
   }
 
@@ -845,10 +862,14 @@ public class SmallSetTest {
     final SmallSet.ref copy = (SmallSet.ref) in.readObject();
     return copy;
   }
-  
-  static record SmallSetHolder(SmallSet set) implements Serializable { }
 
-  /** This fails at the moment. The preview based on Java 20 can't compute the correct offsets. */
+  static record SmallSetHolder(SmallSet set) implements Serializable {
+  }
+
+  /**
+   * This fails at the moment. The preview based on Java 20 can't compute the
+   * correct offsets.
+   */
   private SmallSet copyOfPrimitiveSmallSetInRecord(SmallSet original) throws Exception {
     final var bos = new ByteArrayOutputStream();
     final var out = new ObjectOutputStream(bos);

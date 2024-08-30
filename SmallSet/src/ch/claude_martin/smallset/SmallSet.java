@@ -2,6 +2,9 @@ package ch.claude_martin.smallset;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.BitSet;
 import java.util.Collection;
@@ -11,12 +14,13 @@ import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.PrimitiveIterator;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.Random;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.BiConsumer;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
+import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -85,6 +89,22 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     return n.byteValue();
   }
   
+  /** 
+   * Returns the int value that is equivalent to this set. 
+   * @see #fromInt(int)
+   */
+  public int toInt() {
+    return this.value;
+  }
+  
+  /** 
+   * Returns the set that is equivalent to the given int value. 
+   * @see #toInt()
+   */
+  public static SmallSet fromInt(int value) {
+    return new SmallSet(value);
+  }
+
   /** Empty set. 
    * @see #empty()*/
   public static SmallSet of() {
@@ -325,9 +345,13 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
   }
 
   /** Returns the value of this small set. 
-   * Note that it is not compatible with {@link Set#hashCode()}. */
+   * Note that it is not compatible with {@link Set#hashCode()}. 
+   * 
+   * @implNote We could just use super.hashCode() but that's not stable.
+   * Just using this.value is easy and gives us the same value even if we restart the JVM.
+   * */
   public int hashCode() {
-    return this.value;
+    return this.value;  
   }
 
   /**
@@ -714,7 +738,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
   }
 
   /**
-   * Remove smallest value and consume it.
+   * Remove smallest value and consume it. The given consumer is not called if this set is empty.
    * 
    * <p>
    * This can be used like this: <code><pre>
@@ -725,17 +749,16 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    * 
    * However, it's easier to just use {@link #forEach(ByteConsumer)} instead.
    * 
-   * @throw NoSuchElementException when the set is empty
    * @see #iterator()
    * @see #forEach(ByteConsumer)
    */
-  public SmallSet next(final ByteConsumer consumer) throws NoSuchElementException {
+  public SmallSet next(final ByteConsumer consumer) {
     requireNonNull(consumer, "consumer");
     if (this.isEmpty())
-      throw new NoSuchElementException("empty set");
+      return this;
     final byte next = next(this.value);
     assert next >= 0 && next < 32;
-    consumer.accept(next);
+    consumer.acceptAsByte(next);
     return new SmallSet(this.value & ~(1 << next));
   }
 
@@ -774,10 +797,11 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    * 
    * @throws NoSuchElementException
    *           if this set is empty
+   * @see #random(RandomGenerator, ByteConsumer)
    */
-  public byte random(final Random rng) {
+  public byte random(final RandomGenerator rng) throws NoSuchElementException {
     requireNonNull(rng, "rng");
-    if (this.value == 0)
+    if (this.isEmpty())
       throw new NoSuchElementException("set is empty.");
     int r = rng.nextInt(this.size());
     int c = this.value;
@@ -792,6 +816,20 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
       c >>>= 1;
     }
   }
+  
+  /**
+   * Consumes any of the elements. The given consumer is not called if this set is empty.
+   * 
+   * @see #random(RandomGenerator)
+   */
+  public void random(final RandomGenerator rng, ByteConsumer consumer) {
+    requireNonNull(rng, "rng");
+    requireNonNull(consumer, "consumer");
+    if (this.isEmpty())
+      return;
+    consumer.acceptAsByte(this.random(rng));
+  }
+
 
   /**
    * Performs a reduction on the elements of this set, using the provided
