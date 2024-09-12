@@ -485,15 +485,19 @@ public class SmallSetTest {
     throw new AssertionError(set + ".random(rng) never returned the value " + value);
   }
 
+  /* Enum with 32 elements. */
   public static enum Alphabet {
-    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z;
+    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü, Ë, Ï, ẞ;
   }
 
   @Test
   public void testEnum() throws Exception {
-    SmallSet set1 = of(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z);
+    SmallSet set1 = of(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü, Ë, Ï, ẞ);
     SmallSet set2 = of(EnumSet.allOf(Alphabet.class));
     assertEquals(set1, set2);
+    assertEquals(set1.toEnumSet(Alphabet.class), EnumSet.allOf(Alphabet.class));
+    assertEquals(set1.toEnumSet(Alphabet.class), set2.toEnumSet(Alphabet.class));
+    assertEquals(empty().toEnumSet(Alphabet.class), EnumSet.noneOf(Alphabet.class));
 
     EnumSet<Alphabet> enumSet = set1.toEnumSet(Alphabet.class);
     assertEquals(EnumSet.allOf(Alphabet.class), enumSet);

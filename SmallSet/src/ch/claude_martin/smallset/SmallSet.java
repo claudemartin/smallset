@@ -414,7 +414,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    * @return <code>set \ {element}</code>
    */
   public SmallSet remove(final byte element) {
-    return rem(this, checkRange(element));
+    return this.removeTrustedByte(checkRange(element));
   }
 
   /**
@@ -425,12 +425,12 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    * @return <code>set \ {element}</code>
    */
   public SmallSet remove(final int element) {
-    return rem(this, (byte) checkRange(element));
+    return this.removeTrustedByte((byte) checkRange(element));
   }
 
   /** {@link #remove(byte)}, but without check of range. */
-  static SmallSet rem(final SmallSet set, final byte element) {
-    return new SmallSet(set.value & ~(1 << element));
+  private SmallSet removeTrustedByte(final byte element) {
+    return new SmallSet(this.value & ~(1 << element));
   }
 
   /**
@@ -441,7 +441,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    * @return <code>set \ {element.ordinal()}</code>
    */
   public SmallSet remove(final Enum<?> element) {
-    return this.remove((byte) checkRange(requireNonNull(element, "element").ordinal()));
+    return this.removeTrustedByte((byte) checkRange(requireNonNull(element, "element").ordinal()));
   }
 
   /**
@@ -465,24 +465,24 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     var copy = this;
     while (!copy.isEmpty()) {
       var next = next(copy.value);
-      copy = copy.remove(next);
+      copy = copy.removeTrustedByte(next);
       result = result.add((byte) checkRange(operator.applyAsInt(next)));
     }
     return result;
   }
 
   /** Union of two sets. */
-  public  SmallSet union(final SmallSet other) {
+  public SmallSet union(final SmallSet other) {
     return new SmallSet(this.value | other.value);
   }
 
   /** Intersection of two sets. */
-  public  SmallSet intersect(final SmallSet other) {
+  public SmallSet intersect(final SmallSet other) {
     return new SmallSet(this.value & other.value);
   }
 
   /** Elements of b removed from a: a \ b = a.intersect(b.complement()). */
-  public  SmallSet minus(final SmallSet other) {
+  public SmallSet minus(final SmallSet other) {
     return new SmallSet(this.value & ~other.value);
   }
 
@@ -492,7 +492,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
   }
 
   /** Complement of a set. The domain is [min,..,max], both inclusive. */
-  public  SmallSet complement(final int min, final int max) {
+  public SmallSet complement(final int min, final int max) {
     if (checkRange(min) > checkRange(max))
       throw new IllegalArgumentException("max>min");
     return new SmallSet(~this.value & ofRangeClosed(min, max).value);
@@ -732,7 +732,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
     int i = 0;
     var copy = this;
     while (!copy.isEmpty()) {
-      copy = copy.remove(result[i++] = SmallSet.next(copy.value));
+      copy = copy.removeTrustedByte(result[i++] = SmallSet.next(copy.value));
     }
     return result;
   }
@@ -786,9 +786,14 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
   public <E extends Enum<E>> EnumSet<E> toEnumSet(final Class<E> type) {
     requireNonNull(type, "type");
     final EnumSet<E> result = EnumSet.noneOf(type);
+    if (this.isEmpty()) return result;
     final E[] constants = type.getEnumConstants();
-    for (var itr = this.iterator(); itr.hasNext();) 
-      result.add(constants[itr.nextByte()]);
+    var copy = this;
+    while (!copy.isEmpty()) {
+      final byte n;
+      result.add(constants[n = SmallSet.next(copy.value)]);
+      copy = copy.removeTrustedByte(n);
+    }
     return result;
   }
 
