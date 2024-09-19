@@ -807,15 +807,15 @@ public class SmallSetTest {
 
   @Test
   public void testPowerset() throws Exception {
-    final var toSet = Collectors.<SmallSet.ref> toSet();
+    final var toSet = Collectors.<SmallSet> toSet();
     // Very large result, but this should be lazy:
     empty().complement().powerset().peek(x -> {
     });
 
     SmallSet set = empty();
-    Stream<SmallSet.ref> ps = set.powerset();
+    Stream<SmallSet> ps = set.powerset();
     assertEquals(Set.of(empty()), ps.collect(toSet));
-    Set<SmallSet.ref> collected;
+    Set<SmallSet> collected;
 
     for (int i : List.of(0, 5, 31)) {
       set = singleton(i);
@@ -857,13 +857,13 @@ public class SmallSetTest {
     }
   }
 
-  private SmallSet.ref copyOfRef(SmallSet.ref original) throws Exception {
+  private SmallSet copyOfRef(SmallSet original) throws Exception {
     final var bos = new ByteArrayOutputStream();
     final var out = new ObjectOutputStream(bos);
     out.writeObject(original);
     final var bis = new ByteArrayInputStream(bos.toByteArray());
     final var in = new ObjectInputStream(bis);
-    final SmallSet.ref copy = (SmallSet.ref) in.readObject();
+    final SmallSet copy = (SmallSet) in.readObject();
     return copy;
   }
 

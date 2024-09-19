@@ -42,7 +42,7 @@ import java.util.stream.StreamSupport;
  * @author Claude Martin
  *
  */
-public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.ref>, Serializable {
+public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Serializable {
   private static final long serialVersionUID = 1L;
 
   final static SmallSet EMPTY = new SmallSet(0);
@@ -296,17 +296,6 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
   /**
    * Compares this SmallSet to the other.
    */
-  // Since existing API can accept "null", we use the primitive type here
-  public int compareTo(SmallSet.ref other) {
-      if (other == null) {
-          throw new NullPointerException("Can't compare to null");
-      }
-      return this.value - other.value;
-  }
-
-  /**
-   * Compares this SmallSet to the other.
-   */
   public int compareTo(SmallSet other) {
     return this.value - other.value;
 }
@@ -364,7 +353,7 @@ public primitive class SmallSet implements Iterable<Byte>, Comparable<SmallSet.r
    * 
    * @return The powerset of this set.
    * */
-  public Stream<SmallSet.ref> powerset() {
+  public Stream<SmallSet> powerset() {
     return powersetAsInts().mapToObj(SmallSet::new);
   }
 

@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
 /**
  * A container object which may or may not contain a {@code byte} value.
  */
-public primitive class OptionalByte {
+public value class OptionalByte {
   private static final OptionalByte EMPTY = new OptionalByte();
 
   private final boolean             isPresent;

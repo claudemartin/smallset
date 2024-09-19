@@ -1,8 +1,11 @@
 package ch.claude_martin.smallset;
 
 import static java.lang.System.out;
+import static java.lang.System.out;
 
 import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.condition.DisabledIfSystemProperties;
 
 // This is just a simple demo of what my code does. Some of this will change with the next preview of Valhalla.
 
@@ -27,7 +30,7 @@ public class Main {
     out.println(new Object[] { set1, set2 });
     out.println("'Q' seems to be for inline classes while 'L' is the FieldType term for 'reference'.");
     // See: '4.3. Descriptors' in the latest JLS.
-    // https://docs.oracle.com/javase/specs/jvms/se20/html/jvms-4.html#jvms-4.3
+    // https://docs.oracle.com/javase/specs/jvms/se23/html/jvms-4.html#jvms-4.3
 
     out.println();
     out.println("Filtered power set:");
@@ -39,9 +42,21 @@ public class Main {
 
     out.println();
     out.println("You can still use it as a referenced object:");
-    final SmallSet.ref o = set1; // Now it's in the heap memory
+
+    final Object o = set1; // Now it's in the heap memory
+    printObject(o, set1, set2); // must be passed as a reference
+    
+    out.println();
+    out.println(java.util.List.of(set1, set2));
+    out.println(java.util.Set.of(set1, set2));    
+    out.println(java.util.Map.of(set1, set2));    
+  }
+  
+  private static void printObject(Object o, Object set1, Object set2) {
+    // This method must treat the set as an object (i.e. "o" is a reference)
     out.println(o); // Uses custom toString implementation
     out.println(o.hashCode()); // based on the 'value' field
+    out.println(System.identityHashCode(o)); // Same for any copy of the same value
     out.println("bla".equals(o)); // false
     out.println(o.equals(set2)); // false
     out.println(o.equals(null)); // false
@@ -50,6 +65,6 @@ public class Main {
     out.println(set1 == o); // true
     out.println(o == set2); // false
     out.println(o == null); // false
-    out.println(o == o); // true
+    out.println(o == o); // true  
   }
 }
