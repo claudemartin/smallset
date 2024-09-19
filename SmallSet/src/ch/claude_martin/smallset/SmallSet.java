@@ -365,7 +365,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     if (setSize == 1)
       return IntStream.of(empty().value, this.value);
 
-    final long powersetSize = 1 << this.size();
+    final long powersetSize = 1L << this.size();
     final var itr = new PrimitiveIterator.OfInt() {
       private long         i     = 0;
       private final byte[] array = SmallSet.this.toArray();
@@ -1083,5 +1083,15 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     }
     result += (i >>> 1);
     return result;
+  }
+  
+  record S(int i) implements Serializable {
+    Object readResolve() throws ObjectStreamException {
+      return new SmallSet(i);
+    }
+  }
+  
+  Object writeReplace() {
+    return new S(value);
   }
 }

@@ -24,11 +24,10 @@ public class Main {
     out.println(set2.compareTo(set1));
 
     out.println();
-    out.println("Note that you see [Q here:");
+    out.println(new Integer[] { set1.value, set2.value });
     out.println(new SmallSet[] { set1, set2 });
-    out.println("and [L here:");
     out.println(new Object[] { set1, set2 });
-    out.println("'Q' seems to be for inline classes while 'L' is the FieldType term for 'reference'.");
+    // Older versions used to have [Q for arrays of value types
     // See: '4.3. Descriptors' in the latest JLS.
     // https://docs.oracle.com/javase/specs/jvms/se23/html/jvms-4.html#jvms-4.3
 

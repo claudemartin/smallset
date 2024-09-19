@@ -1,5 +1,7 @@
 package ch.claude_martin.smallset;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -10,10 +12,12 @@ import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
+import ch.claude_martin.smallset.SmallSet.S;
+
 /**
  * A container object which may or may not contain a {@code byte} value.
  */
-public value class OptionalByte {
+public value class OptionalByte implements Serializable {
   private static final OptionalByte EMPTY = new OptionalByte();
 
   private final boolean             isPresent;
@@ -50,6 +54,12 @@ public value class OptionalByte {
     if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE)
       throw new IllegalArgumentException("value out of range: " + value);
     return new OptionalByte((byte) value);
+  }
+  
+  public static OptionalByte of(OptionalInt value) {
+    if (value.isEmpty())
+      return EMPTY;
+    return of(value.getAsInt());
   }
 
   public static OptionalByte ofNullable(Number value) {
@@ -150,5 +160,15 @@ public value class OptionalByte {
     if (!isPresent)
       return OptionalByte.empty();
     return OptionalByte.of(mapper.apply(this.value));
+  }
+  
+  record S(byte value) implements Serializable {
+    Object readResolve() throws ObjectStreamException {
+      return new OptionalByte(value);
+    }
+  }
+  
+  Object writeReplace() {
+    return new S(value);
   }
 }

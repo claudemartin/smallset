@@ -1,5 +1,6 @@
 package ch.claude_martin.smallset;
 
+import static ch.claude_martin.smallset.SmallSet.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -7,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.*;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -29,7 +31,9 @@ class OptionalByteTest {
 
   @Test
   void testOf() {
+    assertEquals(OptionalByte.of((byte) 5), OPT_FIVE);
     assertEquals(OptionalByte.of(5), OPT_FIVE);
+    assertEquals(OptionalByte.of(OptionalInt.of(5)), OPT_FIVE);
   }
 
   @Test
@@ -136,5 +140,17 @@ class OptionalByteTest {
     assertEquals(OptionalByte.of(7), OPT_FIVE.map(b -> 7));
     assertEquals(OptionalByte.empty(), EMPTY.map(b -> 7));
   }
-
+  
+  @Test
+  public void testSerializable() throws Exception {
+    // This would fail if there wasn't a writeReplace() method.
+    try (final var bos = new ByteArrayOutputStream(); final var out = new ObjectOutputStream(bos)) {
+      final var original = OptionalByte.of(42);
+      out.writeObject(original);
+      try (final var bis = new ByteArrayInputStream(bos.toByteArray()); final var in = new ObjectInputStream(bis)) {
+        final OptionalByte copy = (OptionalByte) in.readObject();
+        assertEquals(original, copy);
+      }
+    }
+  }
 }

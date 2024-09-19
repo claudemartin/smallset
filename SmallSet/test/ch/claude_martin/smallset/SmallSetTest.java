@@ -11,6 +11,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.random.RandomGenerator;
@@ -808,9 +809,19 @@ public class SmallSetTest {
   @Test
   public void testPowerset() throws Exception {
     final var toSet = Collectors.<SmallSet> toSet();
-    // Very large result, but this should be lazy:
-    empty().complement().powerset().peek(x -> {
-    });
+    // Very large result, but this should still not take too long:
+    final var count = empty().complement().powerset().count();
+    assertEquals(1L << 32, count);
+
+    assertEquals(Set.of(of()), empty().powerset().collect(toSet));
+    for (int i = 0; i < 32; i++) {
+      assertEquals(Set.of(of(), of(i)), of(i).powerset().collect(toSet));
+      for (int j = 0; j < 32; j++) {
+        if (i != j) {
+          assertEquals(Set.of(of(), of(i), of(j), of(i, j)), of(i, j).powerset().collect(toSet));
+        }
+      }
+    }
 
     SmallSet set = empty();
     Stream<SmallSet> ps = set.powerset();
@@ -842,46 +853,30 @@ public class SmallSetTest {
     ps = set.powerset();
     assertEquals(1 << set.size(), ps.distinct().count());
   }
+  
+  @Test
+  public void testStability() throws Exception {
+    // it's so darn fast that we can run this 67 108 864 times
+    of(3, 7, 13, 15, 19, 26).complement().powerset().parallel().forEach(set -> {
+      set.remove(2).add(3).union(set).intersect(ofRange(0, 24)).replaceAll(i -> i++).complement().sum();
+      set.ceiling(5);
+      set.floor(6);
+      set.contains(7);
+      set.min();
+      set.toInt();
+    });
+  }
 
   @Test
   public void testSerializable() throws Exception {
-    {
-      final var set = of(7, 12, 31);
-      final var copy = copyOfRef(set);
-      assertEquals(set, copy);
+    // This would fail if there wasn't a writeReplace() method.
+    try (final var bos = new ByteArrayOutputStream(); final var out = new ObjectOutputStream(bos)) {
+      final var original = of(7, 12, 31);
+      out.writeObject(original);
+      try (final var bis = new ByteArrayInputStream(bos.toByteArray()); final var in = new ObjectInputStream(bis)) {
+        final SmallSet copy = (SmallSet) in.readObject();
+        assertEquals(original, copy);
+      }
     }
-    {
-      final var set = of(0, 7, 13);
-      final var copy = copyOfPrimitiveSmallSetInRecord(set);
-      assertEquals(set, copy);
-    }
-  }
-
-  private SmallSet copyOfRef(SmallSet original) throws Exception {
-    final var bos = new ByteArrayOutputStream();
-    final var out = new ObjectOutputStream(bos);
-    out.writeObject(original);
-    final var bis = new ByteArrayInputStream(bos.toByteArray());
-    final var in = new ObjectInputStream(bis);
-    final SmallSet copy = (SmallSet) in.readObject();
-    return copy;
-  }
-
-  static record SmallSetHolder(SmallSet set) implements Serializable {
-  }
-
-  /**
-   * This fails at the moment. The preview based on Java 20 can't compute the
-   * correct offsets.
-   */
-  private SmallSet copyOfPrimitiveSmallSetInRecord(SmallSet original) throws Exception {
-    final var bos = new ByteArrayOutputStream();
-    final var out = new ObjectOutputStream(bos);
-    final var holder = new SmallSetHolder(original);
-    out.writeObject(holder);
-    final var bis = new ByteArrayInputStream(bos.toByteArray());
-    final var in = new ObjectInputStream(bis);
-    final SmallSetHolder copy = (SmallSetHolder) in.readObject();
-    return copy.set;
   }
 }
