@@ -147,9 +147,11 @@ class OptionalByteTest {
     try (final var bos = new ByteArrayOutputStream(); final var out = new ObjectOutputStream(bos)) {
       final var original = OptionalByte.of(42);
       out.writeObject(original);
+      out.writeObject(OptionalByte.empty());
       try (final var bis = new ByteArrayInputStream(bos.toByteArray()); final var in = new ObjectInputStream(bis)) {
-        final OptionalByte copy = (OptionalByte) in.readObject();
+        final var copy = (OptionalByte) in.readObject();
         assertEquals(original, copy);
+        assertEquals((OptionalByte) in.readObject(), OptionalByte.empty());
       }
     }
   }

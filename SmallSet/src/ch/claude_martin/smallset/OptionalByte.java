@@ -162,13 +162,13 @@ public value class OptionalByte implements Serializable {
     return OptionalByte.of(mapper.apply(this.value));
   }
   
-  record S(byte value) implements Serializable {
+  record S(boolean isPresent, byte value) implements Serializable {
     Object readResolve() throws ObjectStreamException {
-      return new OptionalByte(value);
+      return isPresent ? new OptionalByte(value) : empty();
     }
   }
   
   Object writeReplace() {
-    return new S(value);
+    return new S(isPresent, value);
   }
 }

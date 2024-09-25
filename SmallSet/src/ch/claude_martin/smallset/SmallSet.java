@@ -620,7 +620,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * This is a terminal operation.
    * 
    * @param stream
-   *          A Stream, e.g. one created by {@link SmallSet#byteStream(int)}
+   *          A Stream, e.g. one created by {@link SmallSet#stream()}
    * @return A set representing a set of the values from the stream
    * @throws IllegalArgumentException
    *           if any of the values is out of range

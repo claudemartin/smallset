@@ -873,9 +873,11 @@ public class SmallSetTest {
     try (final var bos = new ByteArrayOutputStream(); final var out = new ObjectOutputStream(bos)) {
       final var original = of(7, 12, 31);
       out.writeObject(original);
+      out.writeObject(empty());
       try (final var bis = new ByteArrayInputStream(bos.toByteArray()); final var in = new ObjectInputStream(bis)) {
-        final SmallSet copy = (SmallSet) in.readObject();
+        final var copy = (SmallSet) in.readObject();
         assertEquals(original, copy);
+        assertEquals((SmallSet) in.readObject(), empty());
       }
     }
   }
