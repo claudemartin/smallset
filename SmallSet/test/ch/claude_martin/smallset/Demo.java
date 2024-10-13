@@ -9,7 +9,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperties;
 
 // This is just a simple demo of what my code does. Some of this will change with the next preview of Valhalla.
 
-public class Main {
+public class Demo {
   public static void main(String[] args) {
     out.println("Here we create sets and use them like values.");
     out.println("But Java can actually use them like primitive integers.");

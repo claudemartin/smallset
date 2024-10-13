@@ -1,77 +1,86 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="SmallSet">
-  <property name="target" value="23" />
-  <property name="source" value="23" />
+	<property name="target" value="23" />
+	<property name="source" value="23" />
 
-  <target name="clean">
-    <delete dir="../bin" />
-    <mkdir dir="../bin" />
-    <mkdir dir="../lib" />
-  </target>	
+	<target name="clean">
+		<delete dir="../bin" />
+		<mkdir dir="../bin" />
+		<mkdir dir="../lib" />
+	</target>
 
-  <target name="compile">
-     <echo>Java/JVM version: ${ant.java.version}</echo> 
-     <echo>Java/JVM detail version: ${java.version}</echo> 
-    <javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}" >
-      <src path="../src"/>
-      <src path="../test"/>
-      <compilerarg value="--enable-preview"/>
-      <!-- Tests would require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": -->
-       <classpath><fileset dir="../lib"><include name="**/*.jar" /></fileset></classpath> 
-    </javac>
-  </target>
+	<target name="compile" depends="clean">
+		<echo>Java/JVM version: ${ant.java.version}</echo>
+		<echo>Java/JVM detail version: ${java.version}</echo>
+		<javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}" fork="true">
+			<compilerarg value="-J-Duser.language=en" />
+			<compilerarg value="-J-Duser.country=US" />
+			<src path="../src" />
+			<compilerarg value="--enable-preview" />
+		</javac>
+	</target>
 
-  <target name="build">
-    <tstamp>
-      <format property="TIME" pattern="yyyy-MM-dd-HH-mm-ss" locale="en,GB" />
-    </tstamp>
-    <jar jarfile="smallset.jar" basedir="../bin">
-      <exclude name="**/*Test*" />
-      <manifest>
-        <attribute name="Manifest-Version" value="1.0" />
-        <attribute name="Built-By" value="Claude Martin" />
-        <attribute name="Sealed" value="true" />
-        <attribute name="Implementation-Time" value="${TIME}" />
-        <attribute name="Implementation-Title" value="${ant.project.name}" />
-        <attribute name="Implementation-Vendor" value="Claude Martin" />
-        <attribute name="Implementation-Vendor-URL" value="https://claude-martin.ch/" />
-        <attribute name="Main-Class" value="ch.claude_martin.smallset.Main" />
-      </manifest>
-    </jar>
+	<target name="test-compile" depends="compile">
+		<delete file="../bin/module-info.class" />
+		<javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}">
+			<src path="../test" />
+			<compilerarg value="--enable-preview" />
+			<!-- Tests require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": -->
+			<modulepath>
+				<fileset dir="../lib">
+					<include name="**/*.jar" />
+				</fileset>
+			</modulepath>
+		</javac>
+	</target>
+					
+	<target name="build" depends="compile">
+		<tstamp>
+			<format property="TIME" pattern="yyyy-MM-dd-HH-mm-ss" locale="en,GB" />
+		</tstamp>
+		<jar jarfile="smallset.jar" basedir="../bin">
+			<manifest>
+				<attribute name="Manifest-Version" value="1.0" />
+				<attribute name="Built-By" value="Claude Martin" />
+				<attribute name="Sealed" value="true" />
+				<attribute name="Implementation-Time" value="${TIME}" />
+				<attribute name="Implementation-Title" value="${ant.project.name}" />
+				<attribute name="Implementation-Vendor" value="Claude Martin" />
+				<attribute name="Implementation-Vendor-URL" value="https://claude-martin.ch/" />
+			</manifest>
+		</jar>
+	</target>
 
-  </target>
+	<target name="javadoc">
+		<javadoc access="public" author="true" destdir="./doc" encoding="UTF-8" charset="UTF-8" nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="23" header="project home: &lt;a target=&quot;_blank&quot; style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;" use="true" version="true">
+			<link href="https://docs.oracle.com/en/java/javase/${source}/docs/api/" />
+			<!-- sourcepath="../src" packagenames="ch.claude_martin.smallset"  -->
+			<fileset dir="../src" casesensitive="yes">
+				<include name="**/*.java" />
+			</fileset>
+		</javadoc>
+	</target>
 
-  <target name="javadoc">
-    <javadoc 
-      access="public" 
-      author="true" destdir="./doc" 
-      encoding="UTF-8" charset="UTF-8" 
-      nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="1.8" 
-      header="project home: &lt;a target=&quot;_blank&quot; style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;" 
-      use="true" version="true">
-      <link href="https://docs.oracle.com/en/java/javase/14/docs/api/" />
-      <!-- sourcepath="../src" packagenames="ch.claude_martin.smallset"  -->
-      <fileset dir="../src" casesensitive="yes">
-        <include name="**/*.java"/>
-      </fileset>
-    </javadoc>
-  </target>
+	<target name="test" depends="test-compile">
+		<java classname="org.junit.platform.console.ConsoleLauncher" fork="true">
+			<jvmarg value="--enable-preview" />
+			<!-- <arg value="-x-scan-classpath"/>  -->
+			<arg value="--select-package=ch.claude_martin.smallset" />
+			<arg value="--fail-if-no-tests" />
+			<arg value="--reports-dir=reports" />
+			<modulepath>
+				<pathelement location="../bin" />
+				<fileset dir="../lib">
+					<include name="**/*.jar" />
+				</fileset>
+			</modulepath>
+		</java>
+	</target>
 
-  <target name="test">
-  <!-- Sadly, this doesn't find my tests. I don't know why. See "test.bat".-->
-    <java classpath="../bin;../lib/junit-platform-console-standalone-1.10.2.jar" classname="org.junit.platform.console.ConsoleLauncher" fork="true">
-      <jvmarg value="--enable-preview" />
-      <!-- <arg value="-x-scan-classpath"/>  -->
-      <arg value="--select-package=ch.claude_martin.smallset"/>
-      <arg value="--fail-if-no-tests"/>
-      <arg value="--reports-dir=reports"/>
-    </java>
-  </target>
-
-  <target name="run">
-    <java classpath="smallset.jar" classname="ch.claude_martin.smallset.Main" fork="true">
-      <jvmarg value="--enable-preview" />
-    </java>
-  </target>
+	<target name="demo" depends="test-compile">
+		<java classpath="../bin" classname="ch.claude_martin.smallset.Demo" fork="true" failonerror="true">
+			<jvmarg value="--enable-preview" />
+		</java>
+	</target>
 
 </project>

@@ -4,7 +4,7 @@ Methods to use an int as a bit set of small values. Uses 32 bits for a bit set a
 <h2>About</h2>
 I did this when I had an assignment for a sudoku solver/generator. I needed a fast way to handle sets that could contain 1 to 9. Then I extended it with the common methods you'd need for a set. You can use this whenever you need some very fast way to handle sets of small integers.
 
-Later I migreted this to JDK 14 Valhalla preview. It wasn't stable enough as it crashed constantly.
+Later I migrated this to JDK 14 Valhalla preview. It wasn't stable enough as it crashed constantly.
 Some years later I tried again with JDK 20 Valhalla preview and not it works except for serialisation.
 
 An int only allows 32 values (0 to 31), but it would be easy to switch to long. That would be mostly search/replace. The elements in the set would still be bytes. But don't forget to replace `1` by `1L`. 
@@ -32,7 +32,12 @@ import ch.claude_martin.smallset.SmallSet;
   void static process(byte b) { // ...
 ```
 
-There's also a Main class that you can try out.
+There's also a Demo class that you can try out. Just run `ant demo` to see what it does.
+
+<h2>Package</h2>
+
+It's a package named "ch.claude_martin.smallset" that exports the package with the same name. But I don't publish to Maven Central because that simply would be too much work for me. 
+The ant script is rather simple and easy to use. And this is mostly just a simple demonstration of Project Valhalla, so I have no motivation to create an account at Maven Central.
 
 <h2>Further Reading:</h2>
 

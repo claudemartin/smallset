@@ -1,0 +1,4 @@
+module ch.claude_martin.smallset {
+  exports ch.claude_martin.smallset;
+  requires junit.platform.console.standalone;
+}
