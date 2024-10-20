@@ -36,6 +36,10 @@ public class SmallSetTest {
     return elements;
   }
 
+  private static Class<? extends RuntimeException> exception(Object value) {
+    return (Class<? extends RuntimeException>) (value == null ? NullPointerException.class : IllegalArgumentException.class);
+  }
+  
   @Test
   public final void testOf() {
     SmallSet set = of(1, 2, 3, 31);
@@ -46,28 +50,13 @@ public class SmallSetTest {
     assertEquals(of(1, 2, 3, 4, 5, 10), set);
 
     for (byte i : BAD_VALUES) {
-      try {
-        of(i);
-        fail("" + i);
-      } catch (Exception e) {
-        // expected
-      }
+      assertThrows(exception(i), () -> of(i), "of(" + i + ")");
     }
 
-    try {
-      of((List<Number>) null);
-      fail("of(null)");
-    } catch (NullPointerException e) {
-      // expected
-    }
+    assertThrows(NullPointerException.class, () -> of((List<Number>) null), "of(null)");
 
     for (Double d : array((Double) null, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)) {
-      try {
-        of(List.of(d));
-        fail("of([" + d + "])");
-      } catch (NullPointerException | IllegalArgumentException e) {
-        // expected
-      }
+      assertThrows(exception(d), () -> of(List.of(d)), String.valueOf(d));
     }
     {
       final Random rng = new Random();
@@ -95,39 +84,60 @@ public class SmallSetTest {
     }
 
     for (byte i : BAD_VALUES) {
-      try {
-        singleton(i);
-        fail("" + i);
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
-      try {
-        singleton(BigDecimal.valueOf(i));
-        fail("BigDecimal of " + i);
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
+      assertThrows(IllegalArgumentException.class, () -> singleton(i), String.valueOf(i));
+      assertThrows(IllegalArgumentException.class, () -> singleton((int) i), "int of "+i);
+      assertThrows(IllegalArgumentException.class, () -> singleton((double) i), "double of "+i);
+      assertThrows(IllegalArgumentException.class, () -> singleton(BigDecimal.valueOf(i)), "BigDecimal of "+i);
     }
 
-    try {
-      singleton(Double.NaN);
-      fail("NaN");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-
-    try {
-      singleton(Double.POSITIVE_INFINITY);
-      fail("POSITIVE_INFINITY");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-
+    assertThrows(IllegalArgumentException.class, () -> singleton(Double.NaN), "NaN");
+    assertThrows(IllegalArgumentException.class, () -> singleton(Double.POSITIVE_INFINITY), "POSITIVE_INFINITY");
   }
 
   @Test
   public final void testEmpty() {
     assertEquals(of(new byte[0]), empty());
+  }
+
+  @Test
+  public final void testEquals() {
+    final SmallSet set = of(1, 2, 3);
+    assertEquals(set, set);
+    assertNotEquals(set, of(3));
+    assertEquals(empty(), empty());
+    for (byte a = 0; a < 32; a++) {
+      assertEquals(singleton(a), singleton(a));
+      for (byte b = 0; b < 32; b++) {
+        assertEquals(of(a, b), of(a, b));
+      }
+    }
+  }
+
+  @Test
+  public final void testCompare() {
+    assertEquals(0, empty().compareTo(empty()));
+    assertEquals(0, empty().complement().compareTo(empty().complement()));
+
+    final var set0 = of(1, 2, 3);
+    assertEquals(0, set0.compareTo(set0));
+    assertTrue(empty().compareTo(set0) < 0);
+    assertTrue(empty().compareTo(set0.complement()) < 0);
+    assertTrue(empty().complement().compareTo(set0) > 0);
+    assertTrue(singleton(3).compareTo(set0) < 0);
+    assertTrue(singleton(4).compareTo(set0) > 0);
+
+    for (byte a = 0; a < 32; a++) {
+      final var set1 = singleton(a);
+      assertEquals(0, set1.compareTo(set1));
+      assertTrue(empty().compareTo(set1) < 0);
+      assertTrue(empty().complement().compareTo(set1) > 0);
+      for (byte b = 0; b < 32; b++) {
+        final var set2 = of(a, b);
+        assertEquals(0, set2.compareTo(set2));
+        assertTrue(empty().compareTo(set2) < 0);
+        assertTrue(empty().complement().compareTo(set2) > 0);
+      }
+    }
   }
 
   @Test
@@ -153,7 +163,6 @@ public class SmallSetTest {
 
   @Test
   public void testContainsAll() throws Exception {
-
     final SmallSet oneTo5 = of(1, 2, 3, 4, 5);
     assertTrue(oneTo5.containsAll(oneTo5.toSet()));
     assertTrue(oneTo5.containsAll((byte) 3, (byte) 5));
@@ -175,18 +184,8 @@ public class SmallSetTest {
       assertFalse(empty().containsAll(List.of(a1.ordinal())));
     }
 
-    try {
-      of(1, 2, 3).containsAll((EnumSet<?>) null);
-      fail("contains( , null)");
-    } catch (NullPointerException e) {
-      // excepted
-    }
-    try {
-      of(1, 2, 3).containsAll((List<Integer>) null);
-      fail("contains( , null)");
-    } catch (NullPointerException e) {
-      // excepted
-    }
+    assertThrows(NullPointerException.class, () -> of(1, 2, 3).containsAll((EnumSet<?>) null));
+    assertThrows(NullPointerException.class, () -> of(1, 2, 3).containsAll((List<Integer>) null));
   }
 
   @Test
@@ -233,12 +232,7 @@ public class SmallSetTest {
     assertEquals(of(3), set);
 
     for (Byte b : BAD_VALUES) {
-      try {
-        set.remove(b);
-        fail("" + b);
-      } catch (Exception e) {
-        // expected
-      }
+      assertThrows(IllegalArgumentException.class, () -> of(1, 2, 3).remove(b));
     }
 
     {
@@ -251,11 +245,7 @@ public class SmallSetTest {
         assertEquals(tmp.minus(singleton(e)), set);
       }
       assertEquals(empty(), set);
-      try {
-        set.add((Enum<?>) null);
-      } catch (NullPointerException e) {
-        // expected
-      }
+      assertThrows(NullPointerException.class, () -> of(1, 2, 3).add((Enum<?>) null));
     }
 
   }
@@ -291,12 +281,7 @@ public class SmallSetTest {
     while (itr.hasNext())
       set.add(itr.next());
     assertFalse(itr.hasNext());
-    try {
-      itr.next();
-      fail("unexpected 'next'");
-    } catch (NoSuchElementException e) {
-      // expected!
-    }
+    assertThrows(NoSuchElementException.class, () -> itr.next());
     assertFalse(itr.hasNext());
     assertEquals(set, new TreeSet<>(bytes));
   }
@@ -365,22 +350,11 @@ public class SmallSetTest {
     for (int i = 0; i < 32; i++)
       assertEquals(of(i), ofRangeClosed(i, i));
 
-    try {
-      ofRangeClosed(5, 2);
-      fail("5,2");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-
+    assertThrows(IllegalArgumentException.class, () -> ofRangeClosed(5, 2), "ofRangeClosed(5, 2)");
     for (Byte b : BAD_VALUES) {
-      try {
-        ofRangeClosed(b, (byte) 32);
-        fail("" + b);
-      } catch (Exception e) {
-        // expected
-      }
+      assertThrows(IllegalArgumentException.class, () -> ofRangeClosed(b, (byte) 32),
+          "ofRangeClosed((byte) " + b + ", (byte) 32)");
     }
-
   }
 
   @Test
@@ -619,18 +593,8 @@ public class SmallSetTest {
     }
 
     for (final Byte bad : BAD_VALUES) {
-      try {
-        collect(IntStream.of(bad));
-        fail("" + bad);
-      } catch (IllegalArgumentException e) {
-        // Expected
-      }
-      try {
-        collect(Stream.of(bad));
-        fail("" + bad);
-      } catch (IllegalArgumentException e) {
-        // Expected
-      }
+      assertThrows(IllegalArgumentException.class, () -> collect(IntStream.of(bad)), String.valueOf(bad));
+      assertThrows(IllegalArgumentException.class, () -> collect(Stream.of(bad)), String.valueOf(bad));
     }
   }
 
@@ -853,7 +817,7 @@ public class SmallSetTest {
     ps = set.powerset();
     assertEquals(1 << set.size(), ps.distinct().count());
   }
-  
+
   @Test
   public void testStability() throws Exception {
     // it's so darn fast that we can run this 67 108 864 times

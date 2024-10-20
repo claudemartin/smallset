@@ -1,11 +1,9 @@
 package ch.claude_martin.smallset;
 
 import static java.lang.System.out;
-import static java.lang.System.out;
 
+import java.io.*;
 import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.condition.DisabledIfSystemProperties;
 
 // This is just a simple demo of what my code does. Some of this will change with the next preview of Valhalla.
 
@@ -24,16 +22,17 @@ public class Demo {
     out.println(set2.compareTo(set1));
 
     out.println();
-    out.println(new Integer[] { set1.value, set2.value });
-    out.println(new SmallSet[] { set1, set2 });
-    out.println(new Object[] { set1, set2 });
+    out.println(new int[] { set1.value, set2.value }); // [I
+    out.println(new SmallSet[] { set1, set2 }); // [L
+    // out.println(new SmallSet![] { set1, set2 }); // see https://openjdk.org/jeps/8316779
+    out.println(new Object[] { set1, set2 }); // [L
     // Older versions used to have [Q for arrays of value types
     // See: '4.3. Descriptors' in the latest JLS.
     // https://docs.oracle.com/javase/specs/jvms/se23/html/jvms-4.html#jvms-4.3
 
     out.println();
     out.println("Filtered power set:");
-    final var stream = set2.remove(2).union(set1).powerset();
+    final var stream = set2.union(set1).powerset();
     out.println(stream
         .filter(s -> s.size() == 2)
         .map(String::valueOf)
@@ -44,13 +43,26 @@ public class Demo {
 
     final Object o = set1; // Now it's in the heap memory
     printObject(o, set1, set2); // must be passed as a reference
-    
+
     out.println();
     out.println(java.util.List.of(set1, set2));
-    out.println(java.util.Set.of(set1, set2));    
-    out.println(java.util.Map.of(set1, set2));    
+    out.println(java.util.Set.of(set1, set2));
+    out.println(java.util.Map.of(set1, set2));
+
+    // It's serialzeable and the copy is equal to the original:
+    try (final var bos = new ByteArrayOutputStream()) {
+      try (final var oos = new ObjectOutputStream(bos)) {
+        oos.writeObject(set1);
+      }
+      try (final var bis = new ByteArrayInputStream(bos.toByteArray()); final var oin = new ObjectInputStream(bis)) {
+        final var copy = (SmallSet) oin.readObject();
+        out.println(set1 == copy); // true
+      }
+    } catch (ClassNotFoundException | IOException e) {
+      e.printStackTrace();
+    }
   }
-  
+
   private static void printObject(Object o, Object set1, Object set2) {
     // This method must treat the set as an object (i.e. "o" is a reference)
     out.println(o); // Uses custom toString implementation
@@ -64,6 +76,6 @@ public class Demo {
     out.println(set1 == o); // true
     out.println(o == set2); // false
     out.println(o == null); // false
-    out.println(o == o); // true  
+    out.println(o == o); // true
   }
 }

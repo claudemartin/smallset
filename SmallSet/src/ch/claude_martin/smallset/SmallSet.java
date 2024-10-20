@@ -2,32 +2,17 @@ package ch.claude_martin.smallset;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.OptionalInt;
-import java.util.PrimitiveIterator;
+import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.BiConsumer;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
 import java.util.random.RandomGenerator;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.stream.*;
 
 /**
- * Primitive class for sets of small integers (in the range of 0 to 31),
- * represented as bit fields (int).
+ * Value class for sets of small integers (in the range of 0 to 31).
  * 
  * <p>
  * Iteration is possible with {@link #iterator()}. 
@@ -35,9 +20,8 @@ import java.util.stream.StreamSupport;
  * object.
  * 
  * <p>
- * In many cases the type int is used for the set (32 bits as a bit field) and
- * byte is the type of the elements. Make sure you do not confuse an element with 
- * an integer field set.
+ * Sets can be compared but this is done on the bit field (int) and is only useful 
+ * when used in a data structure based on sorting, such as a tree.
  * 
  * @author Claude Martin
  *
@@ -212,7 +196,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     return new SmallSet(1 << numberToByte(requireNonNull(n, "n")));
   }
 
-  /** Empty set. */
+  /** Empty set. This will be the "zero instance" once "Null-Restricted Value Class Types" are available. */
   public static SmallSet empty() {
     return EMPTY;
   }
@@ -556,12 +540,12 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    */
   public Stream<Byte> stream() {
     final int size = this.size();
-    if (size == 0)
-      return Stream.empty();
-    if (size == 1)
-      return Stream.of(Byte.valueOf((byte) log(this.value)));
-    return StreamSupport.stream(() -> Spliterators.spliterator(this.iterator(), size, CHARACTERISTICS), //
-        CHARACTERISTICS, false);
+    return switch (size) {
+      case 0 -> Stream.empty();
+      case 1 -> Stream.of(Byte.valueOf((byte) log(this.value)));
+      default -> StreamSupport.stream(() -> Spliterators.spliterator(this.iterator(), size, CHARACTERISTICS), //
+            CHARACTERISTICS, false);
+    };
   }
   
   public Spliterator.OfInt intSpliterator() {
@@ -579,11 +563,11 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    */
   public IntStream intStream() {
     final int size = this.size();
-    if (size == 0)
-      return IntStream.empty();
-    if (size == 1)
-      return IntStream.of(log(this.value));
-    return StreamSupport.intStream(() -> this.intSpliterator(size), CHARACTERISTICS, false);
+    return switch (size) {
+      case 0 -> IntStream.empty();
+      case 1 -> IntStream.of(log(this.value));
+      default ->  StreamSupport.intStream(() -> this.intSpliterator(size), CHARACTERISTICS, false);
+    };
   }
 
   /**
@@ -633,7 +617,8 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
         (a, b) -> a.value |= b.value).value);
   }
 
-  /** Returns the number of elements in this set (its cardinality). */
+  /** Returns the number of elements in this set (its cardinality). 
+   * @implNote This calls {@link Integer#bitCount(int)}.  */
   public int size() {
     return Integer.bitCount(this.value);
   }
@@ -699,7 +684,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     return 0xffffffff >>> (Integer.SIZE - n);
   }
 
-  /** String representation of the set. */
+  /** String representation of the set. Equal to {@link #toString(CharSequence, CharSequence, CharSequence) toString(",", "(", ")")}. */
   public String toString() {
     if (this.value == 0)
       return "()";
@@ -707,6 +692,13 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     this.forEach(b -> sb.append(b).append(','));
     sb.setCharAt(sb.length()-1, ')');
     return sb.toString();
+  }
+  
+  /** String representation of the set, separated by the specified delimiter, with the specified prefix and suffix, in natural order. */
+  public String toString(CharSequence delimiter, CharSequence prefix, CharSequence suffix) {
+    if (this.value == 0)
+      return "()";
+    return this.stream().map(String::valueOf).collect(Collectors.joining(delimiter, prefix, suffix));
   }
 
   /** Creates a mutable {@link ByteSet} of the set. */
@@ -835,16 +827,20 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * */
   public int reduce(final int identity, final IntBinaryOperator op) {
     requireNonNull(op, "op");
-    final int size = this.size();
-    if (size == 0)
-      return identity;
-    if (size == 1)
-      return op.applyAsInt(identity, log(this.value));
-    int result = identity;
-    for (var itr = this.iterator(); itr.hasNext();) {
-      result = op.applyAsInt(result, itr.nextByte());
-    }
-    return result;
+    return switch (this.size()) {
+      case 0 -> identity;
+      case 1 -> op.applyAsInt(identity, log(this.value));
+      default -> {
+        int result = identity;
+        var copy = this;
+        while (!copy.isEmpty()) {
+          final var next = SmallSet.next(copy.value);
+          result = op.applyAsInt(result, next);
+          copy = copy.removeTrustedByte(next);
+        }
+        yield result;
+      }
+    };
   }
 
   /**
@@ -856,23 +852,23 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * */
   public OptionalInt reduce( final IntBinaryOperator op) {
     requireNonNull(op, "op");
-    final int size = this.size();
-    if (size == 0)
-      return OptionalInt.empty();
-    int set = this.value;
-    if (size == 1)
-      return OptionalInt.of((byte) log(set));
-
-    int result = Integer.numberOfTrailingZeros(set);
-    int value = result + 1;
-    set >>>= value;
-    while (set != 0) {
-      if ((set & 1) != 0)
-        result = op.applyAsInt(result, value);
-      value++;
-      set >>>= 1;
-    }
-    return OptionalInt.of(result);
+    return switch (this.size()) {
+      case 0 -> OptionalInt.empty();
+      case 1 -> OptionalInt.of((byte) log(this.value));
+      default -> {
+        var set = this.value;
+        int result = Integer.numberOfTrailingZeros(set);
+        int value = result + 1;
+        set >>>= value;
+        while (set != 0) {
+          if ((set & 1) != 0)
+            result = op.applyAsInt(result, value);
+          value++;
+          set >>>= 1;
+        }
+        yield OptionalInt.of(result);
+      }
+    };
   }
 
   /**
@@ -881,31 +877,29 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    */
   public int sum() {
     final int size = this.size();
-    if (size == 0) {
-      return 0;
-    } else if (size == 1) {
+    return switch (size) {
+      case 0 -> 0;
       // singleton: it's just the binary logarithm of set.
-      return log(this.value);
-    } else if (size == 2) {
+      case 1 -> log(this.value); 
       // two values -> check leading/trailing zeroes:
-      return Integer.numberOfTrailingZeros(this.value) + (31 - Integer.numberOfLeadingZeros(this.value));
-    } else if (size == 32) {
-      return 496;
-    } else {
-      if (size > 16) // then the complement has fewer values to count:
-        return 496 - this.complement().sum();
-      int result = 0;
-      int set = this.value;
-      int value = Integer.numberOfTrailingZeros(set);
-      set >>>= value;
-      while (set != 0) {
-        if ((set & 1) != 0)
-          result += value;
-        value++;
-        set >>>= 1;
-      }
-      return result;
-    }
+      case 2 -> Integer.numberOfTrailingZeros(this.value) + (31 - Integer.numberOfLeadingZeros(this.value));
+      case 32 -> 496;
+      default -> {
+        if (size > 16) // then the complement has fewer values to count:
+          yield 496 - this.complement().sum();
+        int result = 0;
+        int set = this.value;
+        int value = Integer.numberOfTrailingZeros(set);
+        set >>>= value;
+        while (set != 0) {
+          if ((set & 1) != 0)
+            result += value;
+          value++;
+          set >>>= 1;
+        }
+        yield result;
+      }    
+    };
   }
 
   /**
