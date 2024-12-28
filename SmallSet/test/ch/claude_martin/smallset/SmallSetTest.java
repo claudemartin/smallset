@@ -37,9 +37,10 @@ public class SmallSetTest {
   }
 
   private static Class<? extends RuntimeException> exception(Object value) {
-    return (Class<? extends RuntimeException>) (value == null ? NullPointerException.class : IllegalArgumentException.class);
+    return (Class<? extends RuntimeException>) (value == null ? NullPointerException.class
+        : IllegalArgumentException.class);
   }
-  
+
   @Test
   public final void testOf() {
     SmallSet set = of(1, 2, 3, 31);
@@ -85,9 +86,9 @@ public class SmallSetTest {
 
     for (byte i : BAD_VALUES) {
       assertThrows(IllegalArgumentException.class, () -> singleton(i), String.valueOf(i));
-      assertThrows(IllegalArgumentException.class, () -> singleton((int) i), "int of "+i);
-      assertThrows(IllegalArgumentException.class, () -> singleton((double) i), "double of "+i);
-      assertThrows(IllegalArgumentException.class, () -> singleton(BigDecimal.valueOf(i)), "BigDecimal of "+i);
+      assertThrows(IllegalArgumentException.class, () -> singleton((int) i), "int of " + i);
+      assertThrows(IllegalArgumentException.class, () -> singleton((double) i), "double of " + i);
+      assertThrows(IllegalArgumentException.class, () -> singleton(BigDecimal.valueOf(i)), "BigDecimal of " + i);
     }
 
     assertThrows(IllegalArgumentException.class, () -> singleton(Double.NaN), "NaN");
@@ -670,6 +671,19 @@ public class SmallSetTest {
         set = set.add(complement.random(rng));
       }
     }
+  }
+
+  @Test
+  public void testSingleElement() throws Exception {
+    assertEquals(OptionalByte.empty(), empty().singleElement());
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(OptionalByte.of(i), singleton(i).singleElement());
+    }
+
+    assertEquals(OptionalByte.empty(), empty().complement().singleElement());
+    assertEquals(OptionalByte.empty(), of(1, 2, 3).singleElement());
+    assertEquals(OptionalByte.empty(), of(3, 5, 7, 11, 13, 17).singleElement());
   }
 
   @Test

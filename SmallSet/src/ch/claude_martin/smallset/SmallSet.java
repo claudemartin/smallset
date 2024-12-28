@@ -927,6 +927,14 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
       return OptionalByte.empty();
     return OptionalByte.of((byte) result);
   }
+  
+  /**
+   * Returns an {@code OptionalByte} describing the single element of the given
+   * set, or an empty optional if the set isn't a singleton. 
+   */
+  public OptionalByte singleElement() {
+    return this.size() == 1 ? OptionalByte.of((byte) Integer.numberOfTrailingZeros(this.value)) : OptionalByte.empty(); 
+  }
 
   /**
    * Returns the greatest element in this set strictly less than the given

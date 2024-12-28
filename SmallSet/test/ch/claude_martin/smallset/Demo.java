@@ -24,7 +24,8 @@ public class Demo {
     out.println();
     out.println(new int[] { set1.value, set2.value }); // [I
     out.println(new SmallSet[] { set1, set2 }); // [L
-    // out.println(new SmallSet![] { set1, set2 }); // see https://openjdk.org/jeps/8316779
+    // out.println(new SmallSet![] { set1, set2 }); // see
+    // https://openjdk.org/jeps/8316779
     out.println(new Object[] { set1, set2 }); // [L
     // Older versions used to have [Q for arrays of value types
     // See: '4.3. Descriptors' in the latest JLS.
@@ -33,10 +34,7 @@ public class Demo {
     out.println();
     out.println("Filtered power set:");
     final var stream = set2.union(set1).powerset();
-    out.println(stream
-        .filter(s -> s.size() == 2)
-        .map(String::valueOf)
-        .collect(Collectors.joining(" ")));
+    out.println(stream.filter(s -> s.size() == 2).map(String::valueOf).collect(Collectors.joining(" ")));
 
     out.println();
     out.println("You can still use it as a referenced object:");
@@ -61,6 +59,9 @@ public class Demo {
     } catch (ClassNotFoundException | IOException e) {
       e.printStackTrace();
     }
+
+
+    Sudoku.demo();
   }
 
   private static void printObject(Object o, Object set1, Object set2) {

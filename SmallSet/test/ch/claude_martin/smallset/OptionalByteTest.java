@@ -2,6 +2,7 @@ package ch.claude_martin.smallset;
 
 import static ch.claude_martin.smallset.SmallSet.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -140,7 +141,7 @@ class OptionalByteTest {
     assertEquals(OptionalByte.of(7), OPT_FIVE.map(b -> 7));
     assertEquals(OptionalByte.empty(), EMPTY.map(b -> 7));
   }
-  
+
   @Test
   public void testSerializable() throws Exception {
     // This would fail if there wasn't a writeReplace() method.
@@ -154,5 +155,14 @@ class OptionalByteTest {
         assertEquals((OptionalByte) in.readObject(), OptionalByte.empty());
       }
     }
+  }
+
+  @Test
+  public void testFilter() {
+    assertSame(OptionalByte.empty(), OptionalByte.empty().filter(x -> true));
+    assertSame(OptionalByte.empty(), OptionalByte.empty().filter(x -> false));
+    assertEquals(OptionalByte.empty(), OptionalByte.of(4).filter(x -> false));
+    assertEquals(OptionalByte.empty(), OptionalByte.of(4).filter(x -> x == -1));
+    assertEquals(OptionalByte.of(4), OptionalByte.of(4).filter(x -> x == 4));
   }
 }

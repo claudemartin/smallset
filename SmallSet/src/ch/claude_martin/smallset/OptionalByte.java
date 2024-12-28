@@ -2,14 +2,8 @@ package ch.claude_martin.smallset;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
-import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
-import java.util.function.UnaryOperator;
+import java.util.*;
+import java.util.function.*;
 import java.util.stream.IntStream;
 
 import ch.claude_martin.smallset.SmallSet.S;
@@ -95,12 +89,16 @@ public value class OptionalByte implements Serializable {
       emptyAction.run();
     }
   }
-
-  public int orElse(byte other) {
+  
+  public byte or0() {
+    return isPresent ? value : 0;
+  }
+  
+  public byte orElse(byte other) {
     return isPresent ? value : other;
   }
 
-  public int orElseGet(Supplier<? extends Byte> other) {
+  public byte orElseGet(Supplier<? extends Byte> other) {
     return isPresent ? value : other.get();
   }
 
@@ -170,5 +168,14 @@ public value class OptionalByte implements Serializable {
   
   Object writeReplace() {
     return new S(isPresent, value);
+  }
+
+  public OptionalByte filter(Predicate<? super Byte> predicate) {
+    Objects.requireNonNull(predicate);
+    if (isEmpty()) {
+        return this;
+    } else {
+        return predicate.test(value) ? this : empty();
+    }
   }
 }
