@@ -25,7 +25,7 @@
 		<javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}">
 			<src path="../test" />
 			<compilerarg value="--enable-preview" />
-			<!-- Tests require JUnit5. For that we'd have to add "junit-platform-console-standalone-*.jar": -->
+			<!-- Tests require JUnit5. For that have to add "junit-platform-console-standalone-*.jar": -->
 			<modulepath>
 				<fileset dir="../lib">
 					<include name="**/*.jar" />
@@ -64,16 +64,15 @@
 	<target name="test" depends="test-compile">
 		<java classname="org.junit.platform.console.ConsoleLauncher" fork="true">
 			<jvmarg value="--enable-preview" />
-			<!-- <arg value="-x-scan-classpath"/>  -->
 			<arg value="--select-package=ch.claude_martin.smallset" />
 			<arg value="--fail-if-no-tests" />
 			<arg value="--reports-dir=reports" />
-			<modulepath>
+			<classpath> <!-- modulepath used to work but now it suddenly doesn't :-( -->
 				<pathelement location="../bin" />
 				<fileset dir="../lib">
 					<include name="**/*.jar" />
 				</fileset>
-			</modulepath>
+			</classpath>
 		</java>
 	</target>
 

@@ -6,10 +6,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Simple sudoku generator and solver. This uses quite naive brute force. */
 public class Sudoku implements Cloneable {
-  enum STATE {
+  enum State {
     /** Solved and all values are valid. */
     SOLVED,
     /** Not solved but maybe it can be solved. */
@@ -27,7 +28,8 @@ public class Sudoku implements Cloneable {
     FIND_TWO;
   }
 
-  final static SmallSet ALL               = SmallSet.ofRangeClosed(1, 9); // All possible values
+  final static SmallSet ALL               = SmallSet.ofRangeClosed(1, 9);         // All possible
+                                                                                  // values
 
   final static int[][]  SUBGRID_POSITIONS = new int[][] {
       // @formatter:off
@@ -43,24 +45,73 @@ public class Sudoku implements Cloneable {
       // @formatter:on
   };
 
-  final SmallSet[]      grid              = new SmallSet[9 * 9];
+  final static int[][]  ROW_POSITIONS     = new int[][] {
+    // @formatter:off
+    new int[] {  0,  1,  2,  3,  4,  5,  6,  7,  8 },
+    new int[] {  9, 10, 11, 12, 13, 14, 15, 16, 17 },
+    new int[] { 18, 19, 20, 21, 22, 23, 24, 25, 26 },
+    new int[] { 27, 28, 29, 30, 31, 32, 33, 34, 35 },
+    new int[] { 36, 37, 38, 39, 40, 41, 42, 43, 44 },
+    new int[] { 45, 46, 47, 48, 49, 50, 51, 52, 53 },
+    new int[] { 54, 55, 56, 57, 58, 59, 60, 61, 62 },
+    new int[] { 63, 64, 65, 66, 67, 68, 69, 70, 71 },
+    new int[] { 72, 73, 74, 75, 76, 77, 78, 79, 80 },
+    // @formatter:on
+  };
 
-  Sudoku() {
+  final static int[][]  COLUMN_POSITIONS  = new int[][] {
+    // @formatter:off
+    new int[] { 0,  9, 18, 27, 36, 45, 54, 63, 72 },
+    new int[] { 1, 10, 19, 28, 37, 46, 55, 64, 73 },
+    new int[] { 2, 11, 20, 29, 38, 47, 56, 65, 74 },
+    new int[] { 3, 12, 21, 30, 39, 48, 57, 66, 75 },
+    new int[] { 4, 13, 22, 31, 40, 49, 58, 67, 76 },
+    new int[] { 5, 14, 23, 32, 41, 50, 59, 68, 77 },
+    new int[] { 6, 15, 24, 33, 42, 51, 60, 69, 78 },
+    new int[] { 7, 16, 25, 34, 43, 52, 61, 70, 79 },
+    new int[] { 8, 17, 26, 35, 44, 53, 62, 71, 80 },
+    // @formatter:on
+  };
+
+  final static int[][]  HOUSES            = Stream
+      .of(Sudoku.SUBGRID_POSITIONS, Sudoku.ROW_POSITIONS, Sudoku.COLUMN_POSITIONS)
+      .flatMap(Arrays::stream).toArray(int[][]::new);
+
+  final SmallSet[]      grid;
+
+  public Sudoku() {
+    this.grid = new SmallSet[9 * 9];
     for (int i = 0; i < this.grid.length; i++) {
       this.grid[i] = Sudoku.ALL;
     }
   }
 
-  Sudoku(final SmallSet[] grid) {
+  /** Create sudoku from given string. Line breaks are ignored. Space, 0, and _ is interpreted as empty. */
+  public Sudoku(String string) {
+    this(string.codePoints()
+        .mapToObj(chr -> switch (chr) {
+          case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> SmallSet.singleton(chr - '0');
+          case '0', ' ', '_' -> Sudoku.ALL;
+          default -> null;
+        })
+        .filter(Objects::nonNull)
+        .toArray(SmallSet[]::new));
+  }
+
+  private Sudoku(final SmallSet[] grid) {
+    this.grid = grid;
+    Objects.requireNonNull(grid);
     if (grid.length != 9 * 9) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(
+          "Sudoku must contain exactly 81 values. Given data has " + grid.length);
     }
-    System.arraycopy(grid, 0, this.grid, 0, 9 * 9);
   }
 
   @Override
   public Sudoku clone() {
-    return new Sudoku(this.grid);
+    var gridCopy = new SmallSet[9 * 9];
+    System.arraycopy(this.grid, 0, gridCopy, 0, 9 * 9);
+    return new Sudoku(gridCopy);
   }
 
   /** Number of fields with exactly one value. These are the "clues" because the exact value is known. A solved sudoku
@@ -75,42 +126,24 @@ public class Sudoku implements Cloneable {
     return result;
   }
 
-  /** This is the most naive approach where you only check the three rules of sudoku. This might already solve it. it
-   * returns true if anything was changed. */
-  private void naive() {
-    int max = 1000; // just to be absolutely sure we don't end in an endless
-                    // loop.
+  /** This is the most basic approach. This might already solve it. it returns true if anything was changed. */
+  private void basic() {
+    int max = 1000; // just to be absolutely sure we don't end in an endless loop.
     while (true) {
       --max;
       boolean changed = false;
 
-      for (int pos = 0; pos < this.grid.length; pos++) {
+      for (int pos = 0; pos < 9 * 9; pos++) {
         var values = this.grid[pos];
         if (values.size() <= 1) {
           continue;
         }
 
-        final var col = pos % 9; // pos 9 => 0 (fist column)
-        final var row = (pos - col) / 9;
-
-        for (int i = 0; i < 9; i++) {
-          if (row != i) {
-            final var other = this.get(i, col).singleElement();
-            if (other.isPresent()) {
-              this.grid[pos] = values = values.remove(other.getAsByte());
-              changed = true;
-            }
-          }
-          if (col != i) {
-            final var other = this.get(row, i).singleElement();
-            if (other.isPresent()) {
-              this.grid[pos] = values = values.remove(other.getAsByte());
-              changed = true;
-            }
-          }
-          for (final int pos2 : this.subgrid(pos)) {
+        for (final int[] house : this.houses(pos)) {
+          for (final int pos2 : house) {
             if (pos != pos2) {
-              final var other = this.get(pos2).singleElement();
+              final var values2 = this.get(pos2);
+              final var other = values2.singleElement();
               if (other.isPresent()) {
                 this.grid[pos] = values = values.remove(other.getAsByte());
                 changed = true;
@@ -120,62 +153,54 @@ public class Sudoku implements Cloneable {
         }
       }
 
-      // Fill those that could now only be in one place of a row / column / subgrid:
-      value:
+      // Hidden Singles: Fill those that could now only be in one place of a house.
       for (byte v = 1; v <= 9; v++) {
         final var single = SmallSet.singleton(v);
-        for (int x = 0; x < 9; x++) {
-          byte occurancesInRow = 0;
-          int columnWithValue = -1;
-          byte occurancesInCol = 0;
-          int rowWithValue = -1;
-          for (int y = 0; y < 9; y++) {
-            { // x for row and y for column
-              final SmallSet set = this.get(x, y);
-              if (set == single) {
-                continue value;
-              }
-              if (set.contains(v)) {
-                occurancesInRow++;
-                columnWithValue = y;
-              }
-            }
-            { // x for column and y for row
-              final SmallSet set = this.get(y, x);
-              if (set == single) {
-                continue value;
-              }
-              if (set.contains(v)) {
-                occurancesInCol++;
-                rowWithValue = y;
-              }
-            }
-          }
-          if (occurancesInRow == 1) {
-            changed = true;
-            this.set(x, columnWithValue, single);
-          }
-          if (occurancesInCol == 1) {
-            changed = true;
-            this.set(x, rowWithValue, single);
-          }
-        }
-        for (final int[] subgrid : Sudoku.SUBGRID_POSITIONS) {
-          byte occurancesInSubgrid = 0;
-          int posWithValue = -1;
-          for (final int pos : subgrid) {
+        house:
+        for (final int[] house : Sudoku.HOUSES) {
+          byte occurances = 0;
+          int hiddenSinglePos = -1;
+          for (final int pos : house) {
             final SmallSet set = this.get(pos);
             if (set == single) {
-              continue value;
+              continue house;
             }
             if (set.contains(v)) {
-              occurancesInSubgrid++;
-              posWithValue = pos;
+              occurances++;
+              hiddenSinglePos = pos;
             }
           }
-          if (occurancesInSubgrid == 1) {
+          if (occurances == 1) {
             changed = true;
-            this.set(posWithValue, single);
+            this.set(hiddenSinglePos, single);
+          }
+        }
+      }
+
+      // Hidden Pairs: Remove those that can only be in two fields
+      for (final int[] house : Sudoku.HOUSES) {
+        for (int i = 0; i < house.length; i++) {
+          final int pos1 = house[i];
+          for (int j = i + 1; j < house.length; j++) {
+            final int pos2 = house[j];
+            final var v1 = this.get(pos1);
+            if (v1.size() == 2) {
+              final var v2 = this.get(pos2);
+              if (v1.size() == 2 && v2 == v1) {
+                for (final int pos3 : house) {
+                  if (pos3 == pos1 || pos3 == pos2) {
+                    continue;
+                  }
+                  changed = true;
+                  final var v3 = this.get(pos3);
+                  final var v4 = v3.minus(v1);
+                  if (v3 != v4) {
+                    changed = true;
+                    this.set(pos3, v4);
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -196,7 +221,7 @@ public class Sudoku implements Cloneable {
 
     /** How many solutions were found (only makes sense when using {@link Mode#FIND_TWO}). There might more solutions
      * that were not found. */
-    public long count() {
+    protected long count() {
       if (this.mode != Mode.FIND_TWO) {
         throw new IllegalStateException("This brute force didn't try to find multiple solutions.");
       }
@@ -235,10 +260,10 @@ public class Sudoku implements Cloneable {
       }
       final var rnd = ThreadLocalRandom.current();
       for (int pos = this.offset; pos < 9 * 9; pos++) {
-        final int finalPost = pos;
         if (this.mode != Mode.FIND_TWO && this.adder.sum() > 0) {
           return null;
         }
+        final int finalPos = pos;
 
         final SmallSet options = this.sudoku.get(pos);
         if (options.size() <= 1) {
@@ -247,9 +272,9 @@ public class Sudoku implements Cloneable {
 
         final var subtasks = options.stream().map(value -> {
           final var clone = this.sudoku.clone();
-          clone.set(finalPost, SmallSet.singleton(value)); // remove some values
-          clone.naive(); // solve the obvious fields
-          return new BruteForce(this.mode, clone, finalPost + 1, this.adder);
+          clone.set(finalPos, SmallSet.singleton(value)); // remove some values
+          clone.basic(); // solve the obvious fields
+          return new BruteForce(this.mode, clone, finalPos + 1, this.adder);
         }).collect(Collectors.toCollection(ArrayList::new));
 
         if (this.mode == Mode.GENERATE) {
@@ -269,7 +294,7 @@ public class Sudoku implements Cloneable {
   }
 
   /** Finds and returns a solution. This doesn't check if there are more solutions. */
-  private Sudoku solve() {
+  public Sudoku solve() {
     final ForkJoinPool commonPool = ForkJoinPool.commonPool();
     return commonPool.invoke(new BruteForce(Mode.FIND_ANY, this.clone()));
   }
@@ -365,7 +390,7 @@ public class Sudoku implements Cloneable {
     return this.grid[9 * row + col].size() == 1;
   }
 
-  /** Returns all the subgrid positions that will contain the given position. */
+  /** Returns array of all the subgrid positions that contains the given position. */
   int[] subgrid(final int pos) {
     // switch-case is probably faster than calculating it for each call
     final int i = switch (pos) {
@@ -383,6 +408,20 @@ public class Sudoku implements Cloneable {
       default -> throw new ArrayIndexOutOfBoundsException(pos);
     };
     return Sudoku.SUBGRID_POSITIONS[i];
+  }
+
+  /** Returns array of all the row positions that contains the given position. */
+  private int[] row(final int pos) {
+    return Sudoku.ROW_POSITIONS[pos / 9];
+  }
+
+  /** Returns array of all the colum positions that contains the given position. */
+  private int[] column(final int pos) {
+    return Sudoku.COLUMN_POSITIONS[pos % 9];
+  }
+
+  private int[][] houses(final int pos) {
+    return new int[][] { this.subgrid(pos), this.row(pos), this.column(pos) };
   }
 
   void set(final int pos, final SmallSet value) {
@@ -409,7 +448,7 @@ public class Sudoku implements Cloneable {
     return this.remove(9 * row + col, value);
   }
 
-  STATE check() {
+  State check() {
     final byte[] copy = this.asBytes();
 
     // all 9 rows and 9 columns:
@@ -422,7 +461,7 @@ public class Sudoku implements Cloneable {
           if (element > 0) {
             final var next = row.add(element);
             if (next == row) {
-              return STATE.INVALID;
+              return State.INVALID;
             }
             row = next;
           }
@@ -432,7 +471,7 @@ public class Sudoku implements Cloneable {
           if (element > 0) {
             final var next = col.add(element);
             if (next == col) {
-              return STATE.INVALID;
+              return State.INVALID;
             }
             col = next;
           }
@@ -448,7 +487,7 @@ public class Sudoku implements Cloneable {
         if (element > 0) {
           final var next = set.add(element);
           if (next == set) {
-            return STATE.INVALID;
+            return State.INVALID;
           }
           set = next;
         }
@@ -457,11 +496,11 @@ public class Sudoku implements Cloneable {
 
     for (int i = 0; i < 9 * 9; i++) {
       if (this.grid[i].size() != 1) {
-        return STATE.UNSOLVED;
+        return State.UNSOLVED;
       }
     }
 
-    return STATE.SOLVED;
+    return State.SOLVED;
   }
 
   private byte[] asBytes() {
@@ -489,7 +528,7 @@ public class Sudoku implements Cloneable {
     return result;
   }
 
-  /** This sudoku as a "puzzle string". */
+  /** This sudoku as a String. */
   @Override
   public String toString() {
     final StringBuilder b = new StringBuilder(81);
@@ -528,28 +567,28 @@ public class Sudoku implements Cloneable {
   }
 
   public static void demo() {
-    System.out.println();
-    System.out.println("=== SUDOKU ===");
-    System.out.println();
-    System.out.println("Generating random sudoku. This will take a minute. ");
-    System.out.println();
-    System.out.flush();
-
-    final var start = System.nanoTime();
-    final var genrated = Sudoku.generate(30);
-    final var finish = System.nanoTime();
-    final var timeElapsed = Duration.ofNanos(finish - start).toMillis();
-
-    genrated.sudoku().print();
-    System.out.println();
-    System.out.println("No. of clues: " + genrated.sudoku().clues());
-    System.out.println();
-    System.out.println("As Puzzle String: " + genrated.sudoku().toString());
-    System.out.println();
-    System.out.println("Solution: ");
-    genrated.solution().print();
-    System.out.println();
-    System.out.println("Sudoku genarated in " + timeElapsed + " ms.");
+     System.out.println();
+     System.out.println("=== SUDOKU ===");
+     System.out.println();
+     System.out.println("Generating random sudoku. This will take a minute. ");
+     System.out.println();
+     System.out.flush();
+    
+     final var start = System.nanoTime();
+     final var genrated = Sudoku.generate(30);
+     final var finish = System.nanoTime();
+     final var timeElapsed = Duration.ofNanos(finish - start).toMillis();
+    
+     genrated.sudoku().print();
+     System.out.println();
+     System.out.println("No. of clues: " + genrated.sudoku().clues());
+     System.out.println();
+     System.out.println("As String: " + genrated.sudoku().toString());
+     System.out.println();
+     System.out.println("Solution: ");
+     genrated.solution().print();
+     System.out.println();
+     System.out.println("Sudoku genarated in " + timeElapsed + " ms.");
 
   }
 

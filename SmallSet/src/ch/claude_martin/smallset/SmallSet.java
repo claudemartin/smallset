@@ -281,8 +281,8 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Compares this SmallSet to the other.
    */
   public int compareTo(SmallSet other) {
-    return this.value - other.value;
-}
+    return Integer.compareUnsigned(this.value, other.value);
+  }
 
   /**
    * Adds an element to the set.

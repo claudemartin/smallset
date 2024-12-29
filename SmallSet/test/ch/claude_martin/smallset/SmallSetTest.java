@@ -124,6 +124,7 @@ public class SmallSetTest {
     assertTrue(empty().compareTo(set0) < 0);
     assertTrue(empty().compareTo(set0.complement()) < 0);
     assertTrue(empty().complement().compareTo(set0) > 0);
+    assertTrue(empty().complement().compareTo(empty().complement()) == 0);
     assertTrue(singleton(3).compareTo(set0) < 0);
     assertTrue(singleton(4).compareTo(set0) > 0);
 
