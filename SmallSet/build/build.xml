@@ -1,18 +1,45 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="SmallSet">
+	<property name="java.home" value="${env.JAVA_HOME}" />
 	<property name="target" value="23" />
 	<property name="source" value="23" />
+	<!-- The name of the module is the same as that of the package. -->
+	<property name="module" value="ch.claude_martin.smallset" />
+	<property name="destdir" value="../bin/${module}" />
+
+	<path id="junit">
+		<!-- 
+		Tests require JUnit5. But the standalone is not a module.
+		Therefore, we have to add "junit-platform-console-standalone-*.jar" to the classpath. 
+		-->
+		<fileset dir="../lib" includes="*.jar" />
+	</path>
+
+	<path id="modulepath">
+		<pathelement location="../bin" />
+	</path>
+
+	<path id="testpath">
+		<path refid="junit" />
+		<pathelement location="${destdir}" />
+	</path>
+
+	<target name="info">
+		<echo>Module name: ${module}</echo>
+		<echo>ANT version: ${ant.version}</echo>
+		<echo>Java/JVM version: ${ant.java.version}</echo>
+		<echo>Java/JVM detail version: ${java.version}</echo>
+		<echo>Java home: ${java.home}</echo>
+	</target>
 
 	<target name="clean">
-		<delete dir="../bin" />
-		<mkdir dir="../bin" />
+		<delete dir="${module}" />
+		<mkdir dir="${destdir}" />
 		<mkdir dir="../lib" />
 	</target>
 
-	<target name="compile" depends="clean">
-		<echo>Java/JVM version: ${ant.java.version}</echo>
-		<echo>Java/JVM detail version: ${java.version}</echo>
-		<javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}" fork="true">
+	<target name="compile" depends="info,clean">
+		<javac debug="true" destdir="${destdir}" includeantruntime="false" source="${source}" target="${target}" fork="true">
 			<compilerarg value="-J-Duser.language=en" />
 			<compilerarg value="-J-Duser.country=US" />
 			<src path="../src" />
@@ -21,24 +48,19 @@
 	</target>
 
 	<target name="test-compile" depends="compile">
-		<delete file="../bin/module-info.class" />
-		<javac debug="true" destdir="../bin" includeantruntime="false" source="${source}" target="${target}">
+		<!-- "junit-platform-console-standalone" is not a module and so we simply don't use modules to run junit. -->
+		<delete file="${destdir}/module-info.class" />
+		<javac modulepathref="modulepath" classpathref="junit" debug="true" destdir="${destdir}" includeantruntime="false" source="${source}" target="${target}">
 			<src path="../test" />
 			<compilerarg value="--enable-preview" />
-			<!-- Tests require JUnit5. For that have to add "junit-platform-console-standalone-*.jar": -->
-			<modulepath>
-				<fileset dir="../lib">
-					<include name="**/*.jar" />
-				</fileset>
-			</modulepath>
 		</javac>
 	</target>
-					
+
 	<target name="build" depends="compile">
 		<tstamp>
 			<format property="TIME" pattern="yyyy-MM-dd-HH-mm-ss" locale="en,GB" />
 		</tstamp>
-		<jar jarfile="smallset.jar" basedir="../bin">
+		<jar jarfile="${module}.jar" basedir="${destdir}">
 			<manifest>
 				<attribute name="Manifest-Version" value="1.0" />
 				<attribute name="Built-By" value="Claude Martin" />
@@ -62,22 +84,16 @@
 	</target>
 
 	<target name="test" depends="test-compile">
-		<java classname="org.junit.platform.console.ConsoleLauncher" fork="true">
+		<java classpathref="testpath" classname="org.junit.platform.console.ConsoleLauncher" fork="true" failonerror="true">
 			<jvmarg value="--enable-preview" />
-			<arg value="--select-package=ch.claude_martin.smallset" />
+			<arg value="--select-package=${module}" />
 			<arg value="--fail-if-no-tests" />
 			<arg value="--reports-dir=reports" />
-			<classpath> <!-- modulepath used to work but now it suddenly doesn't :-( -->
-				<pathelement location="../bin" />
-				<fileset dir="../lib">
-					<include name="**/*.jar" />
-				</fileset>
-			</classpath>
 		</java>
 	</target>
 
 	<target name="demo" depends="test-compile">
-		<java classpath="../bin" classname="ch.claude_martin.smallset.Demo" fork="true" failonerror="true">
+		<java classpathref="testpath" classname="${module}.Demo" fork="true" failonerror="true">
 			<jvmarg value="--enable-preview" />
 		</java>
 	</target>
