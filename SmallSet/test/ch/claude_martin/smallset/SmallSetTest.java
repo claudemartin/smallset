@@ -411,6 +411,37 @@ public class SmallSetTest {
     assertArrayEquals(new byte[] { 7, 31 }, of(7, 31).toArray());
     for (byte i = 0; i < 32; i++)
       assertArrayEquals(new byte[] { i }, singleton(i).toArray());
+
+    assertArrayEquals(new byte[0], empty().toArray(new byte[0]));
+    assertArrayEquals(new byte[] { 1, 5 }, of(1, 5).toArray(new byte[2]));
+    assertArrayEquals(new byte[] { 1, 5, -1 }, of(1, 5).toArray(new byte[3]));
+    assertArrayEquals(new byte[] { -1, -1, -1 }, empty().toArray(new byte[3]));
+    assertArrayEquals(new byte[] { 31 }, of(31).toArray(new byte[1]));
+    assertThrows(ArrayIndexOutOfBoundsException.class, () -> of(1).toArray(new byte[0]));
+    assertThrows(ArrayIndexOutOfBoundsException.class, () -> of(1, 2).toArray(new byte[1]));
+
+    assertArrayEquals(new Byte[0], empty().toArray(i -> fail(), Byte[]::new));
+    assertArrayEquals(new Integer[] { 7 }, of(7).toArray(i -> i, Integer[]::new));
+    assertArrayEquals(new BigInteger[] { BigInteger.TWO }, of(2).toArray(BigInteger::valueOf, BigInteger[]::new));
+
+    Stream.concat(of(0, 1, 17, 31).powerset(), Stream.of(empty().complement()))
+        .forEach(set -> {
+          final var size = set.size();
+          final var expected0 = new byte[size];
+          final var expected1 = new byte[size + 1];
+          Arrays.fill(expected1, (byte) -1);
+          final var expected2 = new Integer[size];
+          int i = 0;
+          for (var value : set) {
+            expected0[i] = value;
+            expected1[i] = value;
+            expected2[i++] = value.intValue();
+          }
+          assertArrayEquals(expected0, set.toArray());
+          assertArrayEquals(expected0, set.toArray(new byte[size]));
+          assertArrayEquals(expected1, set.toArray(new byte[size + 1]));
+          assertArrayEquals(expected2, set.toArray(j -> j, Integer[]::new));
+        });
   }
 
   @Test

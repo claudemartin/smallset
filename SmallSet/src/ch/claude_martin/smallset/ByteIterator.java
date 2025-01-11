@@ -39,7 +39,9 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
   }
 
   /**
-   * @implSpec The default implementation boxes the result of calling {@link #nextByte()}, and
+   * {@inheritDoc}
+   * 
+   * The default implementation boxes the result of calling {@link #nextByte()}, and
    *           returns that boxed result.
    */
   @Override
@@ -48,7 +50,9 @@ public interface ByteIterator extends PrimitiveIterator<Byte, ByteConsumer> {
   }
 
   /**
-   * @implSpec If the action is an instance of {@code ByteConsumer} then it is cast to
+   * {@inheritDoc}
+   * 
+   * If the action is an instance of {@code ByteConsumer} then it is cast to
    *           {@code ByteConsumer} and passed to {@link #forEachRemaining}; otherwise the action is
    *           adapted to an instance of {@code ByteConsumer}, by boxing the argument of
    *           {@code ByteConsumer}, and then passed to {@link #forEachRemaining}.

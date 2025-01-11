@@ -6,8 +6,7 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
-import java.util.function.IntBinaryOperator;
-import java.util.function.IntUnaryOperator;
+import java.util.function.*;
 import java.util.random.RandomGenerator;
 import java.util.stream.*;
 
@@ -280,6 +279,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /**
    * Compares this SmallSet to the other.
    */
+  @Override
   public int compareTo(SmallSet other) {
     return Integer.compareUnsigned(this.value, other.value);
   }
@@ -320,9 +320,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /** Returns the value of this small set. 
    * Note that it is not compatible with {@link Set#hashCode()}. 
    * 
-   * @implNote We could just use super.hashCode() but that's not stable.
+   * We could just use super.hashCode() but that's not stable.
    * Just using this.value is easy and gives us the same value even if we restart the JVM.
    * */
+  @Override
   public int hashCode() {
     return this.value;  
   }
@@ -487,6 +488,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /**
    * Creates an iterator for the set.
    */
+  @Override
   public ByteIterator iterator() {
     return new ByteIterator() {
       private int _set = SmallSet.this.value;
@@ -618,7 +620,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   }
 
   /** Returns the number of elements in this set (its cardinality). 
-   * @implNote This calls {@link Integer#bitCount(int)}.  */
+   *  This simply returns {@link Integer#bitCount(int)}.  */
   public int size() {
     return Integer.bitCount(this.value);
   }
@@ -685,6 +687,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   }
 
   /** String representation of the set. Equal to {@link #toString(CharSequence, CharSequence, CharSequence) toString(",", "(", ")")}. */
+  @Override
   public String toString() {
     if (this.value == 0)
       return "()";
@@ -714,6 +717,36 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     var copy = this;
     while (!copy.isEmpty()) {
       copy = copy.removeTrustedByte(result[i++] = SmallSet.next(copy.value));
+    }
+    return result;
+  }
+  
+  /** Fills the given array with the values of this set. 
+   * If the array is larger than needed, the remaining range is filled with <code>-1</code>.
+   * 
+   *  @throws ArrayIndexOutOfBoundsException if the given array is too small */
+  public byte[] toArray(byte[] destination) {
+    if (this.size() > destination.length) {
+      throw new ArrayIndexOutOfBoundsException("The given array is too small to hold the values");
+    }
+    var copy = this;
+    var index = 0;
+    while (!copy.isEmpty()) {
+      copy = copy.removeTrustedByte(destination[index++] = SmallSet.next(copy.value));
+    }
+    Arrays.fill(destination, index, destination.length, (byte) -1);
+    return destination;
+  }
+  
+  /** Creates a new array and fills it with the mapped values of this set. */
+  public <T> T[] toArray(IntFunction<T> mapper, IntFunction<T[]> arrayFactory) {
+    final var result = arrayFactory.apply(this.size());
+    var copy = this;
+    var index = 0;
+    while (!copy.isEmpty()) {
+      final var next = SmallSet.next(copy.value);
+      result[index++] = mapper.apply(next);
+      copy = copy.removeTrustedByte(next);
     }
     return result;
   }
