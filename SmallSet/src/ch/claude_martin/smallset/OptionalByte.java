@@ -94,6 +94,10 @@ public value class OptionalByte implements Serializable {
     return isPresent ? value : 0;
   }
   
+  public Byte orNull() {
+    return isPresent ? value : null;
+  }
+  
   public byte orElse(byte other) {
     return isPresent ? value : other;
   }
@@ -102,7 +106,7 @@ public value class OptionalByte implements Serializable {
     return isPresent ? value : other.get();
   }
 
-  public <X extends Throwable> int orElseThrow(Supplier<X> exceptionSupplier) throws X {
+  public <X extends Throwable> byte orElseThrow(Supplier<X> exceptionSupplier) throws X {
     if (isPresent) {
       return value;
     } else {
@@ -110,7 +114,7 @@ public value class OptionalByte implements Serializable {
     }
   }
   
-  public int orElseThrow() {
+  public byte orElseThrow() {
     if (!isPresent) {
       throw new NoSuchElementException("No value present");
     }

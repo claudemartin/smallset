@@ -166,8 +166,11 @@ public class SmallSetTest {
   @Test
   public void testContainsAll() throws Exception {
     final SmallSet oneTo5 = of(1, 2, 3, 4, 5);
+    assertTrue(oneTo5.containsAll(oneTo5));
+    assertFalse(oneTo5.containsAll(empty().complement()));
     assertTrue(oneTo5.containsAll(oneTo5.toSet()));
     assertTrue(oneTo5.containsAll((byte) 3, (byte) 5));
+    assertTrue(oneTo5.containsAll(SmallSet.of(3, 5)));
     assertFalse(oneTo5.containsAll((byte) 3, (byte) 30));
 
     final EnumSet<Alphabet> alphabet = EnumSet.allOf(Alphabet.class);

@@ -210,7 +210,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   public boolean contains(final byte element) {
     return (this.value & (1 << checkRange(element))) != 0;
   }
-
+  
   /**
    * Tests if an element is in the set.
    * 
@@ -706,7 +706,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /** Creates a mutable {@link ByteSet} of the set. */
   public ByteSet toSet() {
-    return new ByteSet(this);
+    return new BasicByteSet(this);
   }
 
   /** Given set as {@code byte[]}. */
