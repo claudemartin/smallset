@@ -1,6 +1,7 @@
 package ch.claude_martin.smallset;
 
-import java.util.*;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /** Wraps some original ByteSet applying a subrange or inversion of order. It's never both. */
 final class ModifiedByteSet extends AbstractByteSet {
@@ -8,7 +9,7 @@ final class ModifiedByteSet extends AbstractByteSet {
   private final boolean  descending;
   private final SmallSet range;
 
-  private ModifiedByteSet(ByteSet original, boolean descending, SmallSet range) {
+  private ModifiedByteSet(final ByteSet original, final boolean descending, final SmallSet range) {
     super();
     this.original = original;
     this.descending = descending;
@@ -17,16 +18,17 @@ final class ModifiedByteSet extends AbstractByteSet {
 
   @Override
   public SmallSet toSmallSet() {
-    if (descending)
+    if (this.descending) {
       return this.original.toSmallSet();
-    return this.original.toSmallSet().intersect(range);
+    }
+    return this.original.toSmallSet().intersect(this.range);
   }
 
-  public static ModifiedByteSet reversed(ByteSet original) {
+  public static ModifiedByteSet reversed(final ByteSet original) {
     return new ModifiedByteSet(original, true, SmallSet.empty().complement());
   }
 
-  public static ModifiedByteSet ranged(ByteSet original, SmallSet range) {
+  public static ModifiedByteSet ranged(final ByteSet original, final SmallSet range) {
     return new ModifiedByteSet(original, false, range);
   }
 
@@ -36,24 +38,26 @@ final class ModifiedByteSet extends AbstractByteSet {
   }
 
   @Override
-  public boolean add(Byte b) {
+  public boolean add(final Byte b) {
     Objects.requireNonNull(b);
-    if (range.contains(b))
+    if (this.range.contains(b)) {
       return this.original.add(b);
+    }
     throw new IllegalArgumentException("Can't add " + b + ". Value is out of range.");
   }
 
   @Override
-  public boolean add(byte b) throws IllegalArgumentException {
-    if (range.contains(b))
+  public boolean add(final byte b) throws IllegalArgumentException {
+    if (this.range.contains(b)) {
       return this.original.add(b);
+    }
     throw new IllegalArgumentException("Can't add " + b + ". Value is out of range.");
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     Objects.requireNonNull(o);
-    if (o instanceof Byte b && range.contains(b)) {
+    if (o instanceof final Byte b && this.range.contains(b)) {
       return this.original.remove(b);
     } else {
       return false;
@@ -61,9 +65,10 @@ final class ModifiedByteSet extends AbstractByteSet {
   }
 
   @Override
-  public boolean remove(byte b) {
-    if (range.contains(b))
+  public boolean remove(final byte b) {
+    if (this.range.contains(b)) {
       return this.original.remove(b);
+    }
     return false;
   }
 
@@ -80,28 +85,29 @@ final class ModifiedByteSet extends AbstractByteSet {
 
       @Override
       public byte nextByte() throws NoSuchElementException {
-        final byte next = (descending ? remaining.max() : remaining.min())
-            .orElseThrow(() -> new NoSuchElementException());
+        final byte next = (ModifiedByteSet.this.descending ? this.remaining.max() : this.remaining.min())
+            .orElseThrow(NoSuchElementException::new);
         this.remaining = this.remaining.remove(next);
-        return lastRet = next;
+        return this.lastRet = next;
       }
 
       @Override
       public void remove() {
-        if (lastRet == -1)
+        if (this.lastRet == -1) {
           throw new IllegalStateException();
-        ModifiedByteSet.this.remove(lastRet);
-        lastRet = -1;
+        }
+        ModifiedByteSet.this.remove(this.lastRet);
+        this.lastRet = -1;
       }
     };
   }
 
   @Override
   public Byte pollFirst() {
-    var first = this.toSmallSet().min();
+    final var first = this.toSmallSet().min();
     if (first.isPresent()) {
-      byte asByte = first.getAsByte();
-      original.remove(asByte);
+      final byte asByte = first.getAsByte();
+      this.original.remove(asByte);
       return asByte;
     }
     return null;
@@ -109,10 +115,10 @@ final class ModifiedByteSet extends AbstractByteSet {
 
   @Override
   public Byte pollLast() {
-    var first = this.toSmallSet().max();
+    final var first = this.toSmallSet().max();
     if (first.isPresent()) {
-      byte asByte = first.getAsByte();
-      original.remove(asByte);
+      final byte asByte = first.getAsByte();
+      this.original.remove(asByte);
       return asByte;
     }
     return null;
@@ -120,21 +126,23 @@ final class ModifiedByteSet extends AbstractByteSet {
 
   @Override
   public ByteSet descendingSet() {
-    if (this.descending)
-      return original;
-    return reversed(this);
+    if (this.descending) {
+      return this.original;
+    }
+    return ModifiedByteSet.reversed(this);
   }
 
   @Override
   public ByteIterator descendingIterator() {
-    return (!descending ? reversed(this) : this.original).iterator();
+    return (!this.descending ? ModifiedByteSet.reversed(this) : this.original).iterator();
   }
 
   @Override
-  public ByteSet abstractSubSet(byte a, byte b) {
+  public ByteSet abstractSubSet(final byte a, final byte b) {
     final var newRange = SmallSet.ofRange(a, b);
-    if (newRange.containsAll(this.range))
+    if (newRange.containsAll(this.range)) {
       return this;
+    }
     return ModifiedByteSet.ranged(this, newRange);
   }
 }

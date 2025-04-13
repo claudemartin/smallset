@@ -1,17 +1,16 @@
 package ch.claude_martin.smallset;
 
-import java.util.Iterator;
 import java.util.NavigableSet;
 
 /** A mutable, navigable view of a {@link SmallSet}. Basic operations are done with the given {@link SmallSet} value.
  * This implements {@link NavigableSet}. This implementation is not thread-safe.
- * 
+ *
  * @see SmallSet#toSet()
- * 
+ *
  * @author Claude Martin */
 public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
-  public static void main(String[] args) {// FIXME
+  public static void main(final String[] args) {// FIXME
     System.out.println("hello");
   }
 
@@ -19,7 +18,7 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
   public boolean remove(byte element);
 
   /** {@inheritDoc}
-   * 
+   *
    * Be careful that you don't call this with an {@link Integer} by mistake, as this set can't contain an object of that
    * type. */
   @Override
@@ -35,7 +34,7 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
   public boolean contains(final byte v);
 
   /** {@inheritDoc}
-   * 
+   *
    * Be careful that you don't call this with an {@link Integer} by mistake, as this set can't contain an object of that
    * type. */
   @Override
@@ -61,13 +60,13 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
   @Override
   public ByteIterator iterator();
-  
+
   @Override
   public ByteIterator descendingIterator();
 
   @Override
   ByteSet descendingSet();
-  
+
   public ByteSet clone();
 
   @Override

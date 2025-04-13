@@ -1,6 +1,7 @@
 package ch.claude_martin.smallset;
 
-import java.util.*;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Consumer;
 
 final class BasicByteSet extends AbstractByteSet {
@@ -15,14 +16,16 @@ final class BasicByteSet extends AbstractByteSet {
     this.set = set;
   }
 
-  private static boolean outOfRange(byte b) {
+  private static boolean outOfRange(final byte b) {
     return b < 0 || b > 31;
   }
 
   /** Removes the given byte. This does nothing and returns false if the given value is below 0 or greater than 31. */
-  public boolean remove(byte element) {
-    if (outOfRange(element))
+  @Override
+  public boolean remove(final byte element) {
+    if (BasicByteSet.outOfRange(element)) {
       return false;
+    }
     return this.set != (this.set = this.set.remove(element));
   }
 
@@ -30,19 +33,21 @@ final class BasicByteSet extends AbstractByteSet {
    * {@link Number}s. This does nothing and returns false, if the given value is below 0 or greater than 31.
    * {@inheritDoc} */
   @Override
-  public boolean remove(Object o) {
-    if (o instanceof Byte b && !outOfRange(b))
-      return remove((byte) b);
+  public boolean remove(final Object o) {
+    if (o instanceof final Byte b && !BasicByteSet.outOfRange(b)) {
+      return this.remove((byte) b);
+    }
     return false;
   }
 
-  public boolean add(byte e) throws IllegalArgumentException {
+  @Override
+  public boolean add(final byte e) throws IllegalArgumentException {
     return this.set != (this.set = this.set.add(e));
   }
 
   @Override
-  public boolean add(Byte e) throws IllegalArgumentException {
-    return add((byte) e);
+  public boolean add(final Byte e) throws IllegalArgumentException {
+    return this.add((byte) e);
   }
 
   @Override
@@ -50,20 +55,24 @@ final class BasicByteSet extends AbstractByteSet {
     this.set = SmallSet.empty();
   }
 
+  @Override
   public SmallSet toSmallSet() {
     return this.set;
   }
 
+  @Override
   public boolean contains(final byte v) {
-    if (outOfRange(v))
+    if (BasicByteSet.outOfRange(v)) {
       return false;
+    }
     return this.set.contains(v);
   }
 
   @Override
   public boolean contains(final Object o) {
-    if (o instanceof Byte b && !outOfRange(b))
+    if (o instanceof final Byte b && !BasicByteSet.outOfRange(b)) {
       return this.set.contains(b);
+    }
     return false;
   }
 
@@ -90,19 +99,21 @@ final class BasicByteSet extends AbstractByteSet {
 
       @Override
       public byte nextByte() throws NoSuchElementException {
-        if (this.remaining.isEmpty())
+        if (this.remaining.isEmpty()) {
           throw new NoSuchElementException();
-        byte next = (byte) Integer.numberOfTrailingZeros(this.remaining.value);
+        }
+        final byte next = (byte) Integer.numberOfTrailingZeros(this.remaining.value);
         this.remaining = this.remaining.remove(next);
-        return lastRet = next;
+        return this.lastRet = next;
       }
 
       @Override
       public void remove() {
-        if (lastRet == -1)
+        if (this.lastRet == -1) {
           throw new IllegalStateException();
-        BasicByteSet.this.set = BasicByteSet.this.set.remove(lastRet);
-        lastRet = -1;
+        }
+        BasicByteSet.this.set = BasicByteSet.this.set.remove(this.lastRet);
+        this.lastRet = -1;
       }
     };
 
@@ -114,21 +125,23 @@ final class BasicByteSet extends AbstractByteSet {
   }
 
   /** Returns the hash code value for this set that is compatible with {@link Set#hashCode()}
-   * 
+   *
    * @see Set#hashCode() */
   @Override
   public int hashCode() {
     int h = 0;
     int value = this.set.value;
-    for (byte n; value != 0; value &= ~(1 << n))
+    for (byte n; value != 0; value &= ~(1 << n)) {
       h += Byte.hashCode(n = (byte) Integer.numberOfTrailingZeros(value));
+    }
     return h;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (o instanceof BasicByteSet bs)
+  public boolean equals(final Object o) {
+    if (o instanceof final BasicByteSet bs) {
       return this.set == bs.set;
+    }
     return super.equals(o);
   }
 
@@ -149,20 +162,22 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public ByteIterator descendingIterator() {
-    return descendingSet().iterator();
+    return this.descendingSet().iterator();
   }
 
   @Override
-  public ByteSet abstractSubSet(byte fromElement, byte toElement) {
-    if (fromElement == 0 && toElement == Integer.SIZE)
+  public ByteSet abstractSubSet(final byte fromElement, final byte toElement) {
+    if (fromElement == 0 && toElement == Integer.SIZE) {
       return this;
+    }
     return ModifiedByteSet.ranged(this, SmallSet.ofRange(fromElement, toElement));
   }
 
   @Override
   public Byte pollFirst() {
-    if (this.set.isEmpty())
+    if (this.set.isEmpty()) {
       return null;
+    }
     final byte first = (byte) Integer.numberOfTrailingZeros(this.set.value);
     this.set = this.set.remove(first);
     return first;
@@ -170,8 +185,9 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public Byte pollLast() {
-    if (this.set.isEmpty())
+    if (this.set.isEmpty()) {
       return null;
+    }
     final byte last = (byte) (31 - Integer.numberOfLeadingZeros(this.set.value));
     this.set = this.set.remove(last);
     return last;

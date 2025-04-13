@@ -26,7 +26,7 @@ public value class OptionalByte implements Serializable {
   }
 
   public static OptionalByte empty() {
-    return EMPTY;
+    return OptionalByte.EMPTY;
   }
 
   /**
@@ -35,151 +35,160 @@ public value class OptionalByte implements Serializable {
    * @param value
    *          the byte value to be present
    */
-  private OptionalByte(byte value) {
+  private OptionalByte(final byte value) {
     this.isPresent = true;
     this.value = value;
   }
 
-  public static OptionalByte of(byte value) {
+  public static OptionalByte of(final byte value) {
     return new OptionalByte(value);
   }
 
-  public static OptionalByte of(int value) {
-    if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE)
+  public static OptionalByte of(final int value) {
+    if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
       throw new IllegalArgumentException("value out of range: " + value);
+    }
     return new OptionalByte((byte) value);
   }
-  
-  public static OptionalByte of(OptionalInt value) {
-    if (value.isEmpty())
-      return EMPTY;
-    return of(value.getAsInt());
+
+  public static OptionalByte of(final OptionalInt value) {
+    if (value.isEmpty()) {
+      return OptionalByte.EMPTY;
+    }
+    return OptionalByte.of(value.getAsInt());
   }
 
-  public static OptionalByte ofNullable(Number value) {
-    if (value == null)
-      return empty();
-    return of(value.intValue());
+  public static OptionalByte ofNullable(final Number value) {
+    if (value == null) {
+      return OptionalByte.empty();
+    }
+    return OptionalByte.of(value.intValue());
   }
 
   public byte getAsByte() {
-    if (!isPresent) {
+    if (!this.isPresent) {
       throw new NoSuchElementException("No value present");
     }
-    return value;
+    return this.value;
   }
 
   public boolean isPresent() {
-    return isPresent;
-  }
-  
-  public boolean isEmpty() {
-    return !isPresent;
+    return this.isPresent;
   }
 
-  public void ifPresent(ByteConsumer consumer) {
-    if (isPresent)
-      consumer.accept(value);
+  public boolean isEmpty() {
+    return !this.isPresent;
   }
-  
-  public void ifPresentOrElse(IntConsumer action, Runnable emptyAction) {
-    if (isPresent) {
-      action.accept(value);
+
+  public void ifPresent(final ByteConsumer consumer) {
+    if (this.isPresent) {
+      consumer.accept(this.value);
+    }
+  }
+
+  public void ifPresentOrElse(final IntConsumer action, final Runnable emptyAction) {
+    if (this.isPresent) {
+      action.accept(this.value);
     } else {
       emptyAction.run();
     }
   }
-  
+
   public byte or0() {
-    return isPresent ? value : 0;
+    return this.isPresent ? this.value : 0;
   }
-  
+
   public Byte orNull() {
-    return isPresent ? value : null;
-  }
-  
-  public byte orElse(byte other) {
-    return isPresent ? value : other;
+    return this.isPresent ? this.value : null;
   }
 
-  public byte orElseGet(Supplier<? extends Byte> other) {
-    return isPresent ? value : other.get();
+  public byte orElse(final byte other) {
+    return this.isPresent ? this.value : other;
   }
 
-  public <X extends Throwable> byte orElseThrow(Supplier<X> exceptionSupplier) throws X {
-    if (isPresent) {
-      return value;
+  public byte orElseGet(final Supplier<? extends Byte> other) {
+    return this.isPresent ? this.value : other.get();
+  }
+
+  public <X extends Throwable> byte orElseThrow(final Supplier<X> exceptionSupplier) throws X {
+    if (this.isPresent) {
+      return this.value;
     } else {
       throw exceptionSupplier.get();
     }
   }
-  
+
   public byte orElseThrow() {
-    if (!isPresent) {
+    if (!this.isPresent) {
       throw new NoSuchElementException("No value present");
     }
-    return value;
+    return this.value;
   }
 
   public IntStream stream() {
-    return isPresent ? IntStream.of(value) : IntStream.empty();
+    return this.isPresent ? IntStream.of(this.value) : IntStream.empty();
   }
-  
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
 
-    if (obj instanceof OptionalByte other)
-      return (isPresent && other.isPresent) ? value == other.value : isPresent == other.isPresent;
-      
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+
+    if (obj instanceof final OptionalByte other) {
+      return (this.isPresent && other.isPresent) ? this.value == other.value : this.isPresent == other.isPresent;
+    }
+
     return false;
   }
 
   @Override
   public int hashCode() {
-    return isPresent ? value : Integer.MIN_VALUE;
+    return this.isPresent ? this.value : Integer.MIN_VALUE;
   }
 
   @Override
   public String toString() {
-    return isPresent ? String.format("OptionalByte[%s]", value) : "OptionalByte.empty";
+    return this.isPresent ? String.format("OptionalByte[%s]", this.value) : "OptionalByte.empty";
   }
 
-  public <U> Optional<U> mapToObj(Function<Byte, ? extends U> mapper) {
-    if (!isPresent)
+  public <U> Optional<U> mapToObj(final Function<Byte, ? extends U> mapper) {
+    if (!this.isPresent) {
       return Optional.empty();
+    }
     return Optional.ofNullable(mapper.apply(this.value));
   }
 
-  public OptionalInt mapToInt(ToIntFunction<Byte> mapper) {
-    if (!isPresent)
+  public OptionalInt mapToInt(final ToIntFunction<Byte> mapper) {
+    if (!this.isPresent) {
       return OptionalInt.empty();
+    }
     return OptionalInt.of(mapper.applyAsInt(this.value));
   }
 
-  public OptionalByte map(UnaryOperator<Byte> mapper) {
-    if (!isPresent)
+  public OptionalByte map(final UnaryOperator<Byte> mapper) {
+    if (!this.isPresent) {
       return OptionalByte.empty();
+    }
     return OptionalByte.of(mapper.apply(this.value));
   }
-  
+
   record S(boolean isPresent, byte value) implements Serializable {
     Object readResolve() throws ObjectStreamException {
-      return isPresent ? new OptionalByte(value) : empty();
+      return this.isPresent ? new OptionalByte(this.value) : OptionalByte.empty();
     }
   }
-  
+
   Object writeReplace() {
-    return new S(isPresent, value);
+    return new S(this.isPresent, this.value);
   }
 
-  public OptionalByte filter(Predicate<? super Byte> predicate) {
+  public OptionalByte filter(final Predicate<? super Byte> predicate) {
     Objects.requireNonNull(predicate);
-    if (isEmpty()) {
+    if (this.isEmpty()) {
         return this;
     } else {
-        return predicate.test(value) ? this : empty();
+        return predicate.test(this.value) ? this : OptionalByte.empty();
     }
   }
 }

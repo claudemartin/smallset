@@ -12,16 +12,16 @@ import java.util.stream.*;
 
 /**
  * Value class for sets of small integers (in the range of 0 to 31).
- * 
+ *
  * <p>
- * Iteration is possible with {@link #iterator()}. 
- * {@link #forEach(ByteConsumer)} does the same but doesn't require an iterator 
+ * Iteration is possible with {@link #iterator()}.
+ * {@link #forEach(ByteConsumer)} does the same but doesn't require an iterator
  * object.
- * 
+ *
  * <p>
- * Sets can be compared but this is done on the bit field (int) and is only useful 
+ * Sets can be compared but this is done on the bit field (int) and is only useful
  * when used in a data structure based on sorting, such as a tree.
- * 
+ *
  * @author Claude Martin
  *
  */
@@ -29,112 +29,124 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   private static final long serialVersionUID = 1L;
 
   final static SmallSet EMPTY = new SmallSet(0);
-  
+
   final int value; // Visible to other classes in this package (ByteSet etc.)
 
-  /** Creates a set from a bitset value. Not to be confused with {@link #singleton(int)} 
+  /** Creates a set from a bitset value. Not to be confused with {@link #singleton(int)}
    * or {@link #of(byte...)}. */
-  SmallSet(int value) { 
+  SmallSet(final int value) {
     // All integer values are legal. We can't check anything here.
     this.value = value;
   }
 
   private static int checkRange(final int i) {
-    if (i > 31)
+    if (i > 31) {
       throw new IllegalArgumentException("out of range: i>31");
-    if (i < 0)
+    }
+    if (i < 0) {
       throw new IllegalArgumentException("out of range: i<0");
+    }
     return i;
   }
 
   private static byte checkRange(final byte i) {
-    if (i > 31)
+    if (i > 31) {
       throw new IllegalArgumentException("out of range: i>31");
-    if (i < 0)
+    }
+    if (i < 0) {
       throw new IllegalArgumentException("out of range: i<0");
+    }
     return i;
   }
 
   private static byte numberToByte(final Number n) {
-    if (null == n)
+    if (null == n) {
       throw new NullPointerException("given number is null");
+    }
     final double d = n.doubleValue();
 
-    if (Double.isNaN(d))
+    if (Double.isNaN(d)) {
       throw new IllegalArgumentException("not a number");
-    if (Double.isInfinite(d))
+    }
+    if (Double.isInfinite(d)) {
       throw new IllegalArgumentException("infinite");
-    if (d > 31d)
+    }
+    if (d > 31d) {
       throw new IllegalArgumentException("out of range: i>31");
-    if (d < 0d)
+    }
+    if (d < 0d) {
       throw new IllegalArgumentException("out of range: i<0");
+    }
 
     return n.byteValue();
   }
-  
-  /** 
-   * Returns the int value that is equivalent to this set. 
+
+  /**
+   * Returns the int value that is equivalent to this set.
    * @see #fromInt(int)
    */
   public int toInt() {
     return this.value;
   }
-  
-  /** 
-   * Returns the set that is equivalent to the given int value. 
+
+  /**
+   * Returns the set that is equivalent to the given int value.
    * @see #toInt()
    */
-  public static SmallSet fromInt(int value) {
+  public static SmallSet fromInt(final int value) {
     return new SmallSet(value);
   }
 
-  /** Empty set. 
+  /** Empty set.
    * @see #empty()*/
   public static SmallSet of() {
-    return EMPTY;
+    return SmallSet.EMPTY;
   }
 
   /**
    * Creates a SmallSet from a collection or iterable.
-   * 
+   *
    * @param values
    *          Sequence of numbers
    */
   public static SmallSet of(final Iterable<? extends Number> values) {
-    requireNonNull(values, "values");
-    if (values instanceof ByteSet bs)
+    Objects.requireNonNull(values, "values");
+    if (values instanceof final ByteSet bs) {
       return bs.toSmallSet();
+    }
     int set = 0;
     for (final Number n : values) {
-      requireNonNull(n, "values must not contain null");
-      set |= (1 << numberToByte(n));
+      Objects.requireNonNull(n, "values must not contain null");
+      set |= (1 << SmallSet.numberToByte(n));
     }
     return new SmallSet(set);
   }
 
   /**
    * Creates a set from byte elements.
-   * 
+   *
    * @param i
    *          Sequence of bytes.
    */
   public static SmallSet of(final byte... i) {
     int set = 0;
-    for (final byte b : i)
-      set |= (1 << checkRange(b));
+    for (final byte b : i) {
+      set |= (1 << SmallSet.checkRange(b));
+    }
     return new SmallSet(set);
   }
 
   /**
    * Creates a set from int elements.
-   * 
+   *
    * @param i
    *          Sequence of integers.
    */
   public static SmallSet of(final int... i) {
     int set = 0;
-    for (final int integer : i)
-      set |= (1 << checkRange(integer));
+    for (final int integer : i) {
+      set |= (1 << SmallSet.checkRange(integer));
+    }
     return new SmallSet(set);
   }
 
@@ -143,11 +155,11 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    */
   @SafeVarargs
   public static <E extends Enum<E>> SmallSet of(final E... enums) {
-    requireNonNull(enums, "enums");
+    Objects.requireNonNull(enums, "enums");
     int set = 0;
     for (final Enum<?> e : enums) {
-      requireNonNull(enums, "enums must not contain null");
-      set |= (1 << checkRange(e.ordinal()));
+      Objects.requireNonNull(enums, "enums must not contain null");
+      set |= (1 << SmallSet.checkRange(e.ordinal()));
     }
     return new SmallSet(set);
   }
@@ -156,10 +168,11 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Creates set of enum values, using the ordinal of each element.
    */
   public static SmallSet of(final EnumSet<?> enumset) {
-    requireNonNull(enumset, "enumset");
+    Objects.requireNonNull(enumset, "enumset");
     int set = 0;
-    for (final Enum<?> e : enumset)
-      set |= (1 << checkRange(e.ordinal()));
+    for (final Enum<?> e : enumset) {
+      set |= (1 << SmallSet.checkRange(e.ordinal()));
+    }
     return new SmallSet(set);
   }
 
@@ -167,108 +180,108 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Creates set of a BitSet.
    */
   public static SmallSet of(final BitSet bitset) {
-    requireNonNull(bitset, "bitset");
+    Objects.requireNonNull(bitset, "bitset");
     int result = 0;
     for (int i = bitset.nextSetBit(0); i >= 0; i = bitset.nextSetBit(i + 1)) {
-      result |= (1 << checkRange(i));
+      result |= (1 << SmallSet.checkRange(i));
     }
     return new SmallSet(result);
   }
 
   /** Set with just one single value. */
   public static SmallSet singleton(final int val) {
-    return new SmallSet(1 << checkRange(val));
+    return new SmallSet(1 << SmallSet.checkRange(val));
   }
 
   /** Set with just one single value. */
   public static SmallSet singleton(final byte val) {
-    return new SmallSet(1 << checkRange(val));
+    return new SmallSet(1 << SmallSet.checkRange(val));
   }
 
   /** Set with just one single element. */
   public static SmallSet singleton(final Enum<?> element) {
-    return new SmallSet( 1 << checkRange(requireNonNull(element, "element").ordinal()));
+    return new SmallSet( 1 << SmallSet.checkRange(Objects.requireNonNull(element, "element").ordinal()));
   }
 
   /** Set with just one single value. */
   public static SmallSet singleton(final Number n) {
-    return new SmallSet(1 << numberToByte(requireNonNull(n, "n")));
+    return new SmallSet(1 << SmallSet.numberToByte(Objects.requireNonNull(n, "n")));
   }
 
   /** Empty set. This will be the "zero instance" once "Null-Restricted Value Class Types" are available. */
   public static SmallSet empty() {
-    return EMPTY;
+    return SmallSet.EMPTY;
   }
 
   /**
    * Tests if an element is in the set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>element ∈ set</code>
    */
   public boolean contains(final byte element) {
-    return (this.value & (1 << checkRange(element))) != 0;
+    return (this.value & (1 << SmallSet.checkRange(element))) != 0;
   }
-  
+
   /**
    * Tests if an element is in the set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>element ∈ set</code>
    */
   public boolean contains(final int element) {
-    return (this.value & (1 << checkRange(element))) != 0;
+    return (this.value & (1 << SmallSet.checkRange(element))) != 0;
   }
 
   /**
    * Tests if an enum element's ordinal value is in the set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>element ∈ set</code>
    */
   public boolean contains(final Enum<?> element) {
-    return (this.value & (1 << checkRange(requireNonNull(element, "element").ordinal()))) != 0;
+    return (this.value & (1 << SmallSet.checkRange(Objects.requireNonNull(element, "element").ordinal()))) != 0;
   }
 
   /**
    * Checks if the set contains all elements.
-   * 
+   *
    * @param elements
    *          Elements to be checked for containment in given set
    */
   public boolean containsAll(final Collection<? extends Number> elements) {
-    final int mask = of(requireNonNull(elements, "elements")).value;
+    final int mask = SmallSet.of(Objects.requireNonNull(elements, "elements")).value;
     return (this.value & mask) == mask;
   }
 
   /**
    * Checks if the set contains all elements.
-   * 
+   *
    * @param elements
    *          Elements to be checked for containment in given set
    */
   public boolean containsAll(final EnumSet<?> elements) {
-    final int mask = of(requireNonNull(elements, "elements")).value;
+    final int mask = SmallSet.of(Objects.requireNonNull(elements, "elements")).value;
     return (this.value & mask) == mask;
   }
 
   /**
    * Checks if the set contains all elements.
-   * 
+   *
    * @param elements
    *          Elements to be checked for containment in given set
    */
   public  boolean containsAll(final byte... elements) {
-    final int mask = of(requireNonNull(elements, "elements")).value;
+    final int mask = SmallSet.of(Objects.requireNonNull(elements, "elements")).value;
     return (this.value & mask) == mask;
   }
 
   /**
    * Checks if the set contains all elements.
-   * 
+   *
    * @param elements
    *          Elements to be checked for containment in given set
    */
@@ -280,52 +293,52 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Compares this SmallSet to the other.
    */
   @Override
-  public int compareTo(SmallSet other) {
+  public int compareTo(final SmallSet other) {
     return Integer.compareUnsigned(this.value, other.value);
   }
 
   /**
    * Adds an element to the set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>set ∪ {element}</code>
    */
   public SmallSet add(final byte element) {
-    return new SmallSet(this.value  | (1 << checkRange(element)));
+    return new SmallSet(this.value  | (1 << SmallSet.checkRange(element)));
   }
 
   /**
    * Adds an element to the set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>set ∪ {element}</code>
    */
   public SmallSet add(final int element) {
-    return new SmallSet(this.value  | (1 << checkRange(element)));
+    return new SmallSet(this.value  | (1 << SmallSet.checkRange(element)));
   }
 
   /**
    * Adds an enum element to the set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>set ∪ {element.ordinal()}</code>
    */
   public SmallSet add(final Enum<?> element) {
-    return new SmallSet(this.value | (1 << checkRange(requireNonNull(element, "element").ordinal())));
+    return new SmallSet(this.value | (1 << SmallSet.checkRange(Objects.requireNonNull(element, "element").ordinal())));
   }
 
-  /** Returns the value of this small set. 
-   * Note that it is not compatible with {@link Set#hashCode()}. 
-   * 
+  /** Returns the value of this small set.
+   * Note that it is not compatible with {@link Set#hashCode()}.
+   *
    * We could just use super.hashCode() but that's not stable.
    * Just using this.value is easy and gives us the same value even if we restart the JVM.
    * */
   @Override
   public int hashCode() {
-    return this.value;  
+    return this.value;
   }
 
   /**
@@ -335,20 +348,22 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * elements this would be rather large (2<sup>32</sup> = 4294967296).
    * <p>
    * This is not thread safe and has to be processed sequentially.
-   * 
+   *
    * @return The powerset of this set.
    * */
   public Stream<SmallSet> powerset() {
-    return powersetAsInts().mapToObj(SmallSet::new);
+    return this.powersetAsInts().mapToObj(SmallSet::new);
   }
 
   /** There is no SmallSetStream yet, so instead we have this. */
   public IntStream powersetAsInts() {
     final int setSize = this.size();
-    if (setSize == 0)
-      return IntStream.of(empty().value);
-    if (setSize == 1)
-      return IntStream.of(empty().value, this.value);
+    if (setSize == 0) {
+      return IntStream.of(SmallSet.empty().value);
+    }
+    if (setSize == 1) {
+      return IntStream.of(SmallSet.empty().value, this.value);
+    }
 
     final long powersetSize = 1L << this.size();
     final var itr = new PrimitiveIterator.OfInt() {
@@ -357,13 +372,16 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
       @Override
       public int nextInt() {
-        if (!hasNext())
+        if (!this.hasNext()) {
           throw new NoSuchElementException();
+        }
         try {
           int result = 0;
-          for (int x = 0; x < Integer.SIZE; x++)
-            if (((this.i & (1L << x)) != 0))
+          for (int x = 0; x < Integer.SIZE; x++) {
+            if (((this.i & (1L << x)) != 0)) {
               result |= 1 << this.array[x];
+            }
+          }
           return result;
         } finally {
           this.i++;
@@ -382,24 +400,24 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /**
    * Removes an element from a set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>set \ {element}</code>
    */
   public SmallSet remove(final byte element) {
-    return this.removeTrustedByte(checkRange(element));
+    return this.removeTrustedByte(SmallSet.checkRange(element));
   }
 
   /**
    * Removes an element from a set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>set \ {element}</code>
    */
   public SmallSet remove(final int element) {
-    return this.removeTrustedByte((byte) checkRange(element));
+    return this.removeTrustedByte((byte) SmallSet.checkRange(element));
   }
 
   /** {@link #remove(byte)}, but without check of range. */
@@ -409,13 +427,13 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /**
    * Removes an element from a set.
-   * 
+   *
    * @param element
    *          An element
    * @return <code>set \ {element.ordinal()}</code>
    */
   public SmallSet remove(final Enum<?> element) {
-    return this.removeTrustedByte((byte) checkRange(requireNonNull(element, "element").ordinal()));
+    return this.removeTrustedByte((byte) SmallSet.checkRange(Objects.requireNonNull(element, "element").ordinal()));
   }
 
   /**
@@ -431,16 +449,17 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * @throws IllegalArgumentException
    *           if the operator returns an invalid value
    */
-  public SmallSet replaceAll(IntUnaryOperator operator) {
+  public SmallSet replaceAll(final IntUnaryOperator operator) {
     Objects.requireNonNull(operator);
-    if (this.isEmpty())
+    if (this.isEmpty()) {
       return this;
-    SmallSet result = empty();
+    }
+    SmallSet result = SmallSet.empty();
     var copy = this;
     while (!copy.isEmpty()) {
-      var next = next(copy.value);
+      final var next = SmallSet.next(copy.value);
       copy = copy.removeTrustedByte(next);
-      result = result.add((byte) checkRange(operator.applyAsInt(next)));
+      result = result.add((byte) SmallSet.checkRange(operator.applyAsInt(next)));
     }
     return result;
   }
@@ -467,9 +486,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /** Complement of a set. The domain is [min,..,max], both inclusive. */
   public SmallSet complement(final int min, final int max) {
-    if (checkRange(min) > checkRange(max))
+    if (SmallSet.checkRange(min) > SmallSet.checkRange(max)) {
       throw new IllegalArgumentException("max>min");
-    return new SmallSet(~this.value & ofRangeClosed(min, max).value);
+    }
+    return new SmallSet(~this.value & SmallSet.ofRangeClosed(min, max).value);
   }
 
   /**
@@ -479,10 +499,11 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * caller.
    */
   public void forEach(final ByteConsumer action) {
-    requireNonNull(action, "action");
+    Objects.requireNonNull(action, "action");
     var copy = this;
-    while (!copy.isEmpty())
+    while (!copy.isEmpty()) {
       copy = copy.next(action);
+    }
   }
 
   /**
@@ -500,9 +521,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
       @Override
       public byte nextByte() throws NoSuchElementException {
-        if (this._set == 0)
+        if (this._set == 0) {
           throw new NoSuchElementException();
-        byte next = SmallSet.next(this._set);
+        }
+        final byte next = SmallSet.next(this._set);
         this._set &= ~(1 << next);
         return next;
       }
@@ -512,7 +534,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /** An iterator of the set that yields integers. */
   public OfInt intIterator() {
     return new OfInt() {
-      private ByteIterator itr = SmallSet.this.iterator();
+      private final ByteIterator itr = SmallSet.this.iterator();
 
       @Override
       public boolean hasNext() {
@@ -525,50 +547,50 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
       }
     };
   }
-  
+
 
   private static final int CHARACTERISTICS = Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED
                                                | Spliterator.DISTINCT | Spliterator.SORTED;
 
   @Override
   public Spliterator<Byte> spliterator() {
-    return Spliterators.spliterator(this.iterator(), this.size(), CHARACTERISTICS);
+    return Spliterators.spliterator(this.iterator(), this.size(), SmallSet.CHARACTERISTICS);
   }
-  
+
   /**
    * Creates an {@link Stream} of {@link Byte Bytes} (boxed) for the set.
-   * 
+   *
    * @see #intStream()
    */
   public Stream<Byte> stream() {
     final int size = this.size();
     return switch (size) {
       case 0 -> Stream.empty();
-      case 1 -> Stream.of(Byte.valueOf((byte) log(this.value)));
-      default -> StreamSupport.stream(() -> Spliterators.spliterator(this.iterator(), size, CHARACTERISTICS), //
-            CHARACTERISTICS, false);
+      case 1 -> Stream.of(Byte.valueOf((byte) SmallSet.log(this.value)));
+      default -> StreamSupport.stream(() -> Spliterators.spliterator(this.iterator(), size, SmallSet.CHARACTERISTICS), //
+            SmallSet.CHARACTERISTICS, false);
     };
   }
-  
+
   public Spliterator.OfInt intSpliterator() {
     return this.intSpliterator(this.size());
   }
 
   private Spliterator.OfInt intSpliterator(final int size) {
-    return Spliterators.spliterator(this.intIterator(), size, CHARACTERISTICS);
+    return Spliterators.spliterator(this.intIterator(), size, SmallSet.CHARACTERISTICS);
   }
 
   /**
    * Creates an {@link IntStream} of the values of the set.
-   * 
+   *
    * @see #byteStream(int)
    */
   public IntStream intStream() {
     final int size = this.size();
     return switch (size) {
       case 0 -> IntStream.empty();
-      case 1 -> IntStream.of(log(this.value));
-      default ->  StreamSupport.intStream(() -> this.intSpliterator(size), CHARACTERISTICS, false);
+      case 1 -> IntStream.of(SmallSet.log(this.value));
+      default ->  StreamSupport.intStream(() -> this.intSpliterator(size), SmallSet.CHARACTERISTICS, false);
     };
   }
 
@@ -584,7 +606,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * stream into a set.
    * <p>
    * This is a terminal operation.
-   * 
+   *
    * @param stream
    *          An IntStream, e.g. one created by {@link SmallSet#stream(int)}
    * @return A set representing a set of the values from the stream
@@ -592,10 +614,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    *           if any of the values is out of range
    */
   public static SmallSet collect(final IntStream stream) throws IllegalArgumentException {
-    requireNonNull(stream, "stream");
+    Objects.requireNonNull(stream, "stream");
     return new SmallSet(stream.collect(//
         MutableInt::new,//
-        (set, b) -> set.value |= (1 << checkRange(b)), //
+        (set, b) -> set.value |= (1 << SmallSet.checkRange(b)), //
         (a, b) -> a.value |= b.value).value);
   }
 
@@ -604,7 +626,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * stream into a set.
    * <p>
    * This is a terminal operation.
-   * 
+   *
    * @param stream
    *          A Stream, e.g. one created by {@link SmallSet#stream()}
    * @return A set representing a set of the values from the stream
@@ -612,14 +634,14 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    *           if any of the values is out of range
    */
   public static SmallSet collect(final Stream<? extends Number> stream) throws IllegalArgumentException {
-    requireNonNull(stream, "stream");
+    Objects.requireNonNull(stream, "stream");
     return new SmallSet(stream.collect(//
         MutableInt::new,//
-        (set, n) -> set.value |= (1 << numberToByte(n)), //
+        (set, n) -> set.value |= (1 << SmallSet.numberToByte(n)), //
         (a, b) -> a.value |= b.value).value);
   }
 
-  /** Returns the number of elements in this set (its cardinality). 
+  /** Returns the number of elements in this set (its cardinality).
    *  This simply returns {@link Integer#bitCount(int)}.  */
   public int size() {
     return Integer.bitCount(this.value);
@@ -632,7 +654,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /**
    * Range of bytes.
-   * 
+   *
    * @param from
    *          First element (inclusive)
    * @param toExclusive
@@ -640,16 +662,19 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * @return <code>SmallSet.of(a, ... , z-1)</code>
    */
   public static SmallSet ofRange(final int from, final int toExclusive) {
-    if (checkRange(from) == toExclusive) return empty();
-    if (from > toExclusive)
+    if (SmallSet.checkRange(from) == toExclusive) {
+      return SmallSet.empty();
+    }
+    if (from > toExclusive) {
       throw new IllegalArgumentException("from > toExclusive");
-    checkRange(toExclusive - 1);
-    return new SmallSet(lessThan(toExclusive - from) << from);
+    }
+    SmallSet.checkRange(toExclusive - 1);
+    return new SmallSet(SmallSet.lessThan(toExclusive - from) << from);
   }
 
   /**
    * Closed Range of integers.
-   * 
+   *
    * @param a
    *          First element (inclusive)
    * @param z
@@ -657,9 +682,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * @return <code>SmallSet.of(a, ... , z)</code>
    */
   public static SmallSet ofRangeClosed(final int a, final int z) {
-    if (checkRange(a) > checkRange(z))
+    if (SmallSet.checkRange(a) > SmallSet.checkRange(z)) {
       throw new IllegalArgumentException("z<a");
-    return new SmallSet(lessOrEqual(z - a) << a);
+    }
+    return new SmallSet(SmallSet.lessOrEqual(z - a) << a);
   }
 
   /**
@@ -671,7 +697,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   private static int lessOrEqual(final int n) {
     assert n >= 0 : "n<0";
     assert n < Integer.SIZE : "n>31";
-    return lessThan(n + 1);
+    return SmallSet.lessThan(n + 1);
   }
 
   /**
@@ -689,18 +715,20 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /** String representation of the set. Equal to {@link #toString(CharSequence, CharSequence, CharSequence) toString(",", "(", ")")}. */
   @Override
   public String toString() {
-    if (this.value == 0)
+    if (this.value == 0) {
       return "()";
+    }
     final StringBuilder sb = new StringBuilder("(");
     this.forEach(b -> sb.append(b).append(','));
     sb.setCharAt(sb.length()-1, ')');
     return sb.toString();
   }
-  
+
   /** String representation of the set, separated by the specified delimiter, with the specified prefix and suffix, in natural order. */
-  public String toString(CharSequence delimiter, CharSequence prefix, CharSequence suffix) {
-    if (this.value == 0)
+  public String toString(final CharSequence delimiter, final CharSequence prefix, final CharSequence suffix) {
+    if (this.value == 0) {
       return "()";
+    }
     return this.stream().map(String::valueOf).collect(Collectors.joining(delimiter, prefix, suffix));
   }
 
@@ -720,12 +748,12 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     }
     return result;
   }
-  
-  /** Fills the given array with the values of this set. 
+
+  /** Fills the given array with the values of this set.
    * If the array is larger than needed, the remaining range is filled with <code>-1</code>.
-   * 
+   *
    *  @throws ArrayIndexOutOfBoundsException if the given array is too small */
-  public byte[] toArray(byte[] destination) {
+  public byte[] toArray(final byte[] destination) {
     if (this.size() > destination.length) {
       throw new ArrayIndexOutOfBoundsException("The given array is too small to hold the values");
     }
@@ -737,9 +765,9 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     Arrays.fill(destination, index, destination.length, (byte) -1);
     return destination;
   }
-  
+
   /** Creates a new array and fills it with the mapped values of this set. */
-  public <T> T[] toArray(IntFunction<T> mapper, IntFunction<T[]> arrayFactory) {
+  public <T> T[] toArray(final IntFunction<T> mapper, final IntFunction<T[]> arrayFactory) {
     final var result = arrayFactory.apply(this.size());
     var copy = this;
     var index = 0;
@@ -753,24 +781,25 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /**
    * Remove smallest value and consume it. The given consumer is not called if this set is empty.
-   * 
+   *
    * <p>
    * This can be used like this: <code><pre>
    * SmallSet set = of(.....);
    * while (!set.isEmpty())
    *   set = set.next(b -&gt; <i>process</i>(b));
    * </pre></code>
-   * 
+   *
    * However, it's easier to just use {@link #forEach(ByteConsumer)} instead.
-   * 
+   *
    * @see #iterator()
    * @see #forEach(ByteConsumer)
    */
   public SmallSet next(final ByteConsumer consumer) {
-    requireNonNull(consumer, "consumer");
-    if (this.isEmpty())
+    Objects.requireNonNull(consumer, "consumer");
+    if (this.isEmpty()) {
       return this;
-    final byte next = next(this.value);
+    }
+    final byte next = SmallSet.next(this.value);
     assert next >= 0 && next < 32;
     consumer.acceptAsByte(next);
     return new SmallSet(this.value & ~(1 << next));
@@ -780,9 +809,9 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Number of trailing zeroes. This is
    * {@link Integer#numberOfTrailingZeros(int)} cast to {@code byte}, which is
    * the {@link #min() minimum element} in the set or 32.
-   * 
+   *
    * @return First element, or 32 if set is empty.
-   * 
+   *
    * @see #next(ByteConsumer)
    * @see #higher(byte)
    * @see #min()
@@ -790,7 +819,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   private static byte next(final int set) {
     return (byte) Integer.numberOfTrailingZeros(set);
   }
-  
+
   /** Creates a new {@link BitSet} of the set. */
   public BitSet toBitSet() {
     return BitSet.valueOf(new long[] { this.value & 0xFFFFFFFFL });
@@ -798,9 +827,11 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /** {@link EnumSet} of the set. */
   public <E extends Enum<E>> EnumSet<E> toEnumSet(final Class<E> type) {
-    requireNonNull(type, "type");
+    Objects.requireNonNull(type, "type");
     final EnumSet<E> result = EnumSet.noneOf(type);
-    if (this.isEmpty()) return result;
+    if (this.isEmpty()) {
+      return result;
+    }
     final E[] constants = type.getEnumConstants();
     var copy = this;
     while (!copy.isEmpty()) {
@@ -813,39 +844,42 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /**
    * Returns any of the elements.
-   * 
+   *
    * @throws NoSuchElementException
    *           if this set is empty
    * @see #random(RandomGenerator, ByteConsumer)
    */
   public byte random(final RandomGenerator rng) throws NoSuchElementException {
-    requireNonNull(rng, "rng");
-    if (this.isEmpty())
+    Objects.requireNonNull(rng, "rng");
+    if (this.isEmpty()) {
       throw new NoSuchElementException("set is empty.");
+    }
     int r = rng.nextInt(this.size());
     int c = this.value;
     byte result = -1;
     while (true) {
       result++;
       if ((c & 1) != 0) {
-        if (r == 0)
+        if (r == 0) {
           return result;
+        }
         r--;
       }
       c >>>= 1;
     }
   }
-  
+
   /**
    * Consumes any of the elements. The given consumer is not called if this set is empty.
-   * 
+   *
    * @see #random(RandomGenerator)
    */
-  public void random(final RandomGenerator rng, ByteConsumer consumer) {
-    requireNonNull(rng, "rng");
-    requireNonNull(consumer, "consumer");
-    if (this.isEmpty())
+  public void random(final RandomGenerator rng, final ByteConsumer consumer) {
+    Objects.requireNonNull(rng, "rng");
+    Objects.requireNonNull(consumer, "consumer");
+    if (this.isEmpty()) {
       return;
+    }
     consumer.acceptAsByte(this.random(rng));
   }
 
@@ -854,15 +888,15 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Performs a reduction on the elements of this set, using the provided
    * identity value and an associative accumulation function, and returns the
    * reduced value.
-   * 
+   *
    * @see #reduce(IntBinaryOperator)
    * @see #sum()
    * */
   public int reduce(final int identity, final IntBinaryOperator op) {
-    requireNonNull(op, "op");
+    Objects.requireNonNull(op, "op");
     return switch (this.size()) {
       case 0 -> identity;
-      case 1 -> op.applyAsInt(identity, log(this.value));
+      case 1 -> op.applyAsInt(identity, SmallSet.log(this.value));
       default -> {
         int result = identity;
         var copy = this;
@@ -879,23 +913,24 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /**
    * Performs a reduction on the elements of this stream, using the provided
    * associative accumulation function, and returns the reduced value or empty.
-   * 
+   *
    * @see #reduce(IntBinaryOperator)
    * @see #sum()
    * */
   public OptionalInt reduce( final IntBinaryOperator op) {
-    requireNonNull(op, "op");
+    Objects.requireNonNull(op, "op");
     return switch (this.size()) {
       case 0 -> OptionalInt.empty();
-      case 1 -> OptionalInt.of((byte) log(this.value));
+      case 1 -> OptionalInt.of((byte) SmallSet.log(this.value));
       default -> {
         var set = this.value;
         int result = Integer.numberOfTrailingZeros(set);
         int value = result + 1;
         set >>>= value;
         while (set != 0) {
-          if ((set & 1) != 0)
+          if ((set & 1) != 0) {
             result = op.applyAsInt(result, value);
+          }
           value++;
           set >>>= 1;
         }
@@ -913,25 +948,27 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     return switch (size) {
       case 0 -> 0;
       // singleton: it's just the binary logarithm of set.
-      case 1 -> log(this.value); 
+      case 1 -> SmallSet.log(this.value);
       // two values -> check leading/trailing zeroes:
       case 2 -> Integer.numberOfTrailingZeros(this.value) + (31 - Integer.numberOfLeadingZeros(this.value));
       case 32 -> 496;
       default -> {
-        if (size > 16) // then the complement has fewer values to count:
-          yield 496 - this.complement().sum();
+        if (size > 16) { // then the complement has fewer values to count:
+        	yield 496 - this.complement().sum();
+        }
         int result = 0;
         int set = this.value;
         int value = Integer.numberOfTrailingZeros(set);
         set >>>= value;
         while (set != 0) {
-          if ((set & 1) != 0)
+          if ((set & 1) != 0) {
             result += value;
+          }
           value++;
           set >>>= 1;
         }
         yield result;
-      }    
+      }
     };
   }
 
@@ -939,13 +976,14 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * Returns an {@code OptionalByte} describing the minimum element of the given
    * set, or an empty optional if the set is empty. This is equivalent to
    * <code>reduce(Integer::min)</code>.
-   * 
+   *
    * @see #next()
    */
   public OptionalByte min() {
-    int result = Integer.numberOfTrailingZeros(this.value);
-    if (result == Integer.SIZE)
+    final int result = Integer.numberOfTrailingZeros(this.value);
+    if (result == Integer.SIZE) {
       return OptionalByte.empty();
+    }
     return OptionalByte.of((byte) result);
   }
 
@@ -955,38 +993,41 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * <code>reduce(Integer::max)</code>.
    */
   public OptionalByte max() {
-    int result = 31 - Integer.numberOfLeadingZeros(this.value);
-    if (result == -1)
+    final int result = 31 - Integer.numberOfLeadingZeros(this.value);
+    if (result == -1) {
       return OptionalByte.empty();
+    }
     return OptionalByte.of((byte) result);
   }
-  
+
   /**
    * Returns an {@code OptionalByte} describing the single element of the given
-   * set, or an empty optional if the set isn't a singleton. 
+   * set, or an empty optional if the set isn't a singleton.
    */
   public OptionalByte singleElement() {
-    return this.size() == 1 ? OptionalByte.of((byte) Integer.numberOfTrailingZeros(this.value)) : OptionalByte.empty(); 
+    return this.size() == 1 ? OptionalByte.of((byte) Integer.numberOfTrailingZeros(this.value)) : OptionalByte.empty();
   }
 
   /**
    * Returns the greatest element in this set strictly less than the given
    * element, or {@code empty} if there is no such element.
-   * 
+   *
    * @param e
    * @return
    */
   public OptionalByte lower(final byte e) {
-    checkRange(e);
+    SmallSet.checkRange(e);
     int set = this.value;
-    if (e == 0 || set == 0)
+    if (e == 0 || set == 0) {
       return OptionalByte.empty();
+    }
     byte result = -1;
     byte n;
     while (set != 0) {
-      n = next(set);
-      if (n >= e)
+      n = SmallSet.next(set);
+      if (n >= e) {
         break;
+      }
       result = n;
       set &= ~(1 << n); // remove n
     }
@@ -996,12 +1037,12 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /**
    * Returns the greatest element in this set strictly less than the given
    * element, or {@code empty} if there is no such element.
-   * 
+   *
    * @param e
    * @return
    */
   public OptionalByte lower(final int e) {
-    return lower((byte) checkRange(e));
+    return this.lower((byte) SmallSet.checkRange(e));
   }
 
   /**
@@ -1009,16 +1050,18 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * element, or {@code empty} if there is no such element.
    */
   public OptionalByte floor(final byte e) {
-    checkRange(e);
+    SmallSet.checkRange(e);
     int set = this.value;
-    if (set == 0)
+    if (set == 0) {
       return OptionalByte.empty();
+    }
     byte result = -1;
     byte n;
     while (set != 0) {
-      n = next(set);
-      if (n > e)
+      n = SmallSet.next(set);
+      if (n > e) {
         break;
+      }
       result = n;
       set &= ~(1 << n); // remove n
     }
@@ -1030,7 +1073,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * element, or {@code empty} if there is no such element.
    */
   public OptionalByte floor(final int e) {
-    return floor((byte) checkRange(e));
+    return this.floor((byte) SmallSet.checkRange(e));
   }
 
   /**
@@ -1038,14 +1081,15 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * element, or {@code empty} if there is no such element.
    */
   public OptionalByte ceiling(final byte e) {
-    checkRange(e);
+    SmallSet.checkRange(e);
     int set = this.value;
-    if (set == 0)
+    if (set == 0) {
       return OptionalByte.empty();
+    }
     byte result = -1;
     byte n;
     while (set != 0) {
-      n = next(set);
+      n = SmallSet.next(set);
       if (n >= e) {
         result = n;
         break;
@@ -1060,7 +1104,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * element, or {@code empty} if there is no such element.
    */
   public OptionalByte ceiling(final int e) {
-    return ceiling((byte) checkRange(e));
+    return this.ceiling((byte) SmallSet.checkRange(e));
   }
 
   /**
@@ -1068,14 +1112,15 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * element, or {@code empty} if there is no such element.
    */
   public  OptionalByte higher(final byte e) {
-    checkRange(e);
+    SmallSet.checkRange(e);
     int set = this.value;
-    if (e == 31 || set == 0)
+    if (e == 31 || set == 0) {
       return OptionalByte.empty();
+    }
     byte result = -1;
     byte n;
     while (set != 0) {
-      n = next(set);
+      n = SmallSet.next(set);
       if (n > e) {
         result = n;
         break;
@@ -1090,12 +1135,12 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * element, or {@code empty} if there is no such element.
    */
   public OptionalByte higher(final int e) {
-    return higher((byte) checkRange(e));
+    return this.higher((byte) SmallSet.checkRange(e));
   }
 
   /**
    * Binary logarithm: returns n for a given 2<sup>n</sup>.
-   * 
+   *
    * This can be used to get a value from a singleton set.
    */
   static int log(int i) {
@@ -1119,14 +1164,14 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     result += (i >>> 1);
     return result;
   }
-  
+
   record S(int i) implements Serializable {
     Object readResolve() throws ObjectStreamException {
-      return new SmallSet(i);
+      return new SmallSet(this.i);
     }
   }
-  
+
   Object writeReplace() {
-    return new S(value);
+    return new S(this.value);
   }
 }
