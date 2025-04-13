@@ -133,8 +133,13 @@ final class ModifiedByteSet extends AbstractByteSet {
   }
 
   @Override
+  public ByteSet reversed() {
+    return descendingSet();
+  }
+
+  @Override
   public ByteIterator descendingIterator() {
-    return (!this.descending ? ModifiedByteSet.reversed(this) : this.original).iterator();
+    return descendingSet().iterator();
   }
 
   @Override

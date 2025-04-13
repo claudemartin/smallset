@@ -583,7 +583,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /**
    * Creates an {@link IntStream} of the values of the set.
    *
-   * @see #byteStream(int)
+   * @see #stream()
    */
   public IntStream intStream() {
     final int size = this.size();
@@ -608,7 +608,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
    * This is a terminal operation.
    *
    * @param stream
-   *          An IntStream, e.g. one created by {@link SmallSet#stream(int)}
+   *          An IntStream, e.g. one created by {@link #intStream()}
    * @return A set representing a set of the values from the stream
    * @throws IllegalArgumentException
    *           if any of the values is out of range
@@ -973,11 +973,11 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   }
 
   /**
-   * Returns an {@code OptionalByte} describing the minimum element of the given
+   * Returns an {@code OptionalByte} describing the minimum element of the
    * set, or an empty optional if the set is empty. This is equivalent to
    * <code>reduce(Integer::min)</code>.
    *
-   * @see #next()
+   * @see #next(ByteConsumer)
    */
   public OptionalByte min() {
     final int result = Integer.numberOfTrailingZeros(this.value);
@@ -988,7 +988,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   }
 
   /**
-   * Returns an {@code OptionalByte} describing the maximum element of the given
+   * Returns an {@code OptionalByte} describing the maximum element of the
    * set, or an empty optional if the set is empty. This is equivalent to
    * <code>reduce(Integer::max)</code>.
    */
@@ -1001,7 +1001,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   }
 
   /**
-   * Returns an {@code OptionalByte} describing the single element of the given
+   * Returns an {@code OptionalByte} describing the single element of the
    * set, or an empty optional if the set isn't a singleton.
    */
   public OptionalByte singleElement() {

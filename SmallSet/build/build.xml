@@ -74,9 +74,11 @@
 	</target>
 
 	<target name="javadoc">
-		<javadoc access="public" author="true" destdir="./doc" encoding="UTF-8" charset="UTF-8" nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="23" header="project home: &lt;a target=&quot;_blank&quot; style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;" use="true" version="true">
+		<javadoc access="public" author="true" destdir="./doc" encoding="UTF-8" charset="UTF-8" nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="23" 
+			  use="true" version="true" additionalparam="-Xdoclint:none"
+			  header="project home: &lt;a target=&quot;_blank&quot; style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;">
 			<link href="https://docs.oracle.com/en/java/javase/${source}/docs/api/" />
-			<arg value="--enable-preview"/>
+			<arg value="--enable-preview" />
 			<!-- sourcepath="../src" packagenames="ch.claude_martin.smallset"  -->
 			<fileset dir="../src" casesensitive="yes">
 				<include name="**/*.java" />

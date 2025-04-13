@@ -523,12 +523,22 @@ public class SmallSetTest {
   public void testUnion() throws Exception {
     final SmallSet union = of(1, 2, 3).union(of(3, 4, 5));
     assertEquals(ofRangeClosed(1, 5), union);
+    assertEquals(empty(), empty().union(empty()));
+    assertEquals(union, union.union(empty()));
+    assertEquals(union, empty().union(union));
+    assertEquals(empty().complement(), empty().union(empty().complement()));
+    assertEquals(empty().complement(), empty().complement().union(empty()));
   }
 
   @Test
   public void testIntersect() throws Exception {
-    final SmallSet intersetion = of(1, 2, 3).intersect(of(3, 4, 5));
-    assertEquals(singleton(3), intersetion);
+    final SmallSet intersection = of(1, 2, 3).intersect(of(3, 4, 5));
+    assertEquals(singleton(3), intersection);
+    assertEquals(empty(), empty().intersect(empty()));
+    assertEquals(empty(), intersection.intersect(empty()));
+    assertEquals(empty(), empty().intersect(intersection));
+    assertEquals(intersection, intersection.intersect(intersection));
+    assertEquals(intersection, intersection.intersect(empty().complement()));
   }
 
   @Test
@@ -556,6 +566,7 @@ public class SmallSetTest {
     assertEquals(of(1, 4), minus);
     assertEquals(of(1, 4), of(1, 4).minus(empty()));
     assertEquals(empty(), empty().minus(of(8, 9)));
+    assertEquals(empty(), empty().minus(empty()));
   }
 
   @Test
@@ -595,6 +606,7 @@ public class SmallSetTest {
           .collect(TreeSet::new, TreeSet::add, TreeSet::addAll);
       assertEquals(expected, by5);
     }
+    empty().stream().forEach(n -> fail("iteration on empty set"));
   }
 
   @Test

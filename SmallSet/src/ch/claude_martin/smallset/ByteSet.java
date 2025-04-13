@@ -63,6 +63,9 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
   @Override
   public ByteIterator descendingIterator();
+  
+  @Override 
+  public ByteSet reversed();
 
   @Override
   ByteSet descendingSet();
