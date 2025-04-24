@@ -1165,13 +1165,26 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     return result;
   }
 
-  record S(int i) implements Serializable {
+  private record Proxy(int set) implements Serializable {
     Object readResolve() throws ObjectStreamException {
-      return new SmallSet(this.i);
+      return new SmallSet(this.set);
     }
   }
 
+  @java.io.Serial
   Object writeReplace() {
-    return new S(this.value);
+    return new Proxy(this.value);
+  }
+  
+  @java.io.Serial
+  private void readObject(java.io.ObjectInputStream s)
+      throws java.io.InvalidObjectException {
+      throw new java.io.InvalidObjectException("Proxy required");
+  }
+
+  @java.io.Serial
+  private void readObjectNoData()
+      throws java.io.InvalidObjectException {
+      throw new java.io.InvalidObjectException("Proxy required");
   }
 }

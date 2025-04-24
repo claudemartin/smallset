@@ -6,8 +6,6 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.IntStream;
 
-import ch.claude_martin.smallset.SmallSet.S;
-
 /**
  * A container object which may or may not contain a {@code byte} value.
  */
@@ -172,17 +170,7 @@ public value class OptionalByte implements Serializable {
     }
     return OptionalByte.of(mapper.apply(this.value));
   }
-
-  record S(boolean isPresent, byte value) implements Serializable {
-    Object readResolve() throws ObjectStreamException {
-      return this.isPresent ? new OptionalByte(this.value) : OptionalByte.empty();
-    }
-  }
-
-  Object writeReplace() {
-    return new S(this.isPresent, this.value);
-  }
-
+  
   public OptionalByte filter(final Predicate<? super Byte> predicate) {
     Objects.requireNonNull(predicate);
     if (this.isEmpty()) {
@@ -190,5 +178,28 @@ public value class OptionalByte implements Serializable {
     } else {
         return predicate.test(this.value) ? this : OptionalByte.empty();
     }
+  }
+
+  record Proxy(boolean isPresent, byte value) implements Serializable {
+    Object readResolve() throws ObjectStreamException {
+      return this.isPresent ? new OptionalByte(this.value) : OptionalByte.empty();
+    }
+  }
+
+  @java.io.Serial
+  Object writeReplace() {
+    return new Proxy(this.isPresent, this.value);
+  }
+  
+  @java.io.Serial
+  private void readObject(java.io.ObjectInputStream s)
+      throws java.io.InvalidObjectException {
+      throw new java.io.InvalidObjectException("Proxy required");
+  }
+
+  @java.io.Serial
+  private void readObjectNoData()
+      throws java.io.InvalidObjectException {
+      throw new java.io.InvalidObjectException("Proxy required");
   }
 }
