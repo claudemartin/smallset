@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project basedir="." default="build" name="SmallSet">
 	<property name="java.home" value="${env.JAVA_HOME}" />
-	<property name="target" value="23" />
-	<property name="source" value="23" />
+	<property name="target" value="26" />
+	<property name="source" value="26" />
 	<!-- The name of the module is the same as that of the package. -->
 	<property name="module" value="ch.claude_martin.smallset" />
 	<property name="destdir" value="../bin/${module}" />
