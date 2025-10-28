@@ -18,7 +18,7 @@ import static ch.claude_martin.smallset.SmallSet.*;
 import ch.claude_martin.smallset.SmallSet;
 // ...
   SmallSet set = of(1,3,4,7); // [1,3,4,7]
-  set.add(9); // [1,3,4,7,9]
+  set = set.add(9); // [1,3,4,7,9]
   set = set.union(ofRange(12, 32)); // [1,3,4,7,9,12,...,31]
   set.containsAll(List.of(3,7));// true
   set = set.complement(); // [0,2,5,6,8,10,11]
@@ -32,7 +32,7 @@ import ch.claude_martin.smallset.SmallSet;
   void static process(byte b) { // ...
 ```
 
-There's also a Demo class that you can try out. Just run `ant demo` to see what it does.
+There's also a Demo class that you can try out. Just run `ant demo` to see what it does (see build.bat to see how that works).
 
 <h2>Package</h2>
 

@@ -340,8 +340,12 @@ public class Sudoku implements Cloneable {
     for (int i = 0; i < availableProcessors; i++) {
       pool.execute(() -> {
         while (true) {
-          final var sudoku = Sudoku.createFromSolution(solution);
-          candidate.accumulateAndGet(sudoku, (a, b) -> a == null ? b : (a.clues() < b.clues() ? a : b));
+          try {
+            final var sudoku = Sudoku.createFromSolution(solution);
+            candidate.accumulateAndGet(sudoku, (a, b) -> a == null ? b : (a.clues() < b.clues() ? a : b));
+          } catch (InterruptedException e) {
+            return;
+          }
         }
       });
     }
@@ -360,10 +364,13 @@ public class Sudoku implements Cloneable {
   }
 
   /** Clone and then remove numbers at random positions for as long as there is more than one solution. */
-  private static Sudoku createFromSolution(final Sudoku solution) {
+  private static Sudoku createFromSolution(final Sudoku solution) throws InterruptedException {
     Sudoku sudoku = solution;
     final var rng = ThreadLocalRandom.current();
     while (true) {
+      if (Thread.currentThread().isInterrupted()) {
+        throw new InterruptedException();
+      }
       final int pos = rng.nextInt(9 * 9);
       final var next = sudoku.clone();
       next.set(pos, Sudoku.ALL);
@@ -415,7 +422,7 @@ public class Sudoku implements Cloneable {
     return Sudoku.ROW_POSITIONS[pos / 9];
   }
 
-  /** Returns array of all the colum positions that contains the given position. */
+  /** Returns array of all the column positions that contains the given position. */
   private int[] column(final int pos) {
     return Sudoku.COLUMN_POSITIONS[pos % 9];
   }
@@ -567,29 +574,28 @@ public class Sudoku implements Cloneable {
   }
 
   public static void demo() {
-     System.out.println();
-     System.out.println("=== SUDOKU ===");
-     System.out.println();
-     System.out.println("Generating random sudoku. This will take a minute. ");
-     System.out.println();
-     System.out.flush();
-    
-     final var start = System.nanoTime();
-     final var genrated = Sudoku.generate(30);
-     final var finish = System.nanoTime();
-     final var timeElapsed = Duration.ofNanos(finish - start).toMillis();
-    
-     genrated.sudoku().print();
-     System.out.println();
-     System.out.println("No. of clues: " + genrated.sudoku().clues());
-     System.out.println();
-     System.out.println("As String: " + genrated.sudoku().toString());
-     System.out.println();
-     System.out.println("Solution: ");
-     genrated.solution().print();
-     System.out.println();
-     System.out.println("Sudoku genarated in " + timeElapsed + " ms.");
+    System.out.println();
+    System.out.println("=== SUDOKU ===");
+    System.out.println();
+    System.out.println("Generating random sudoku. This will take a minute. ");
+    System.out.println();
+    System.out.flush();
 
+    final var start = System.nanoTime();
+    final var genrated = Sudoku.generate(30);
+    final var finish = System.nanoTime();
+    final var timeElapsed = Duration.ofNanos(finish - start).toMillis();
+
+    genrated.sudoku().print();
+    System.out.println();
+    System.out.println("No. of clues: " + genrated.sudoku().clues());
+    System.out.println();
+    System.out.println("As String: " + genrated.sudoku().toString());
+    System.out.println();
+    System.out.println("Solution: ");
+    genrated.solution().print();
+    System.out.println();
+    System.out.println("Sudoku genarated in " + timeElapsed + " ms.");
   }
 
 }

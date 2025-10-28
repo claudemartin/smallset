@@ -57,7 +57,7 @@ final class ModifiedByteSet extends AbstractByteSet {
   @Override
   public boolean remove(final Object o) {
     Objects.requireNonNull(o);
-    if (o instanceof final Byte b && this.range.contains(b)) {
+    if (o instanceof final byte b && this.range.contains(b)) {
       return this.original.remove(b);
     } else {
       return false;

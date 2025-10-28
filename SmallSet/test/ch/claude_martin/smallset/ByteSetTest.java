@@ -32,11 +32,13 @@ class ByteSetTest {
     }
 
     assertThrows(IllegalArgumentException.class, () -> set.add(OOR));
+    assertThrows(IllegalArgumentException.class, () -> set.add((byte) -1));
 
     for (byte i = 0; i < 32; i++) {
       var result = set.add(i);
       assertEquals(i != FIVE, result);
     }
+    assertEquals(set, U.toSet());
   }
 
   @Test
@@ -56,6 +58,7 @@ class ByteSetTest {
       var result = set.remove(i);
       assertEquals(i != FIVE, result);
     }
+    assertEquals(set, Set.of());
     set.add(FIVE);
     for (byte i = -3; i < 40; i++) {
       var result = set.remove(i);
@@ -65,6 +68,8 @@ class ByteSetTest {
     assertTrue(set.isEmpty());
     assertFalse(set.remove(Byte.valueOf(FIVE)));
     assertFalse(set.remove(OOR));
+    assertFalse(set.remove((byte) -1));
+    assertFalse(set.remove((byte) -400));
   }
 
   @Test

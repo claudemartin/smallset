@@ -10,10 +10,6 @@ import java.util.NavigableSet;
  * @author Claude Martin */
 public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
-  public static void main(final String[] args) {// FIXME
-    System.out.println("hello");
-  }
-
   /** Removes the given byte value. */
   public boolean remove(byte element);
 

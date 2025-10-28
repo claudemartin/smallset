@@ -34,8 +34,8 @@ final class BasicByteSet extends AbstractByteSet {
    * {@inheritDoc} */
   @Override
   public boolean remove(final Object o) {
-    if (o instanceof final Byte b && !BasicByteSet.outOfRange(b)) {
-      return this.remove((byte) b);
+    if (o instanceof final byte b && !BasicByteSet.outOfRange(b)) {
+      return this.remove(b);
     }
     return false;
   }
@@ -70,7 +70,7 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public boolean contains(final Object o) {
-    if (o instanceof final Byte b && !BasicByteSet.outOfRange(b)) {
+    if (o instanceof final byte b) {
       return this.set.contains(b);
     }
     return false;
