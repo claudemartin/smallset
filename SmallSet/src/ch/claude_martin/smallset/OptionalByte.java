@@ -8,6 +8,8 @@ import java.util.stream.IntStream;
 
 /**
  * A container object which may or may not contain a {@code byte} value.
+ * 
+ * In a future release of Java this might be replaced by the type {@code byte?} (nullable primitive byte). 
  */
 public value class OptionalByte implements Serializable {
   private static final OptionalByte EMPTY = new OptionalByte();

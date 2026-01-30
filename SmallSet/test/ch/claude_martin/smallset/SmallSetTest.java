@@ -26,7 +26,7 @@ public class SmallSetTest {
   @BeforeAll
   public static void before() {
     // This leads to optimization, which reduces the overall time of the test run.
-    collect(empty().complement().stream().parallel().filter(x -> x % 2 == 0));
+   empty().complement().stream().parallel().filter(x -> x % 2 == 0).collect(collector());
   }
 
   private static final List<Byte> BAD_VALUES = List.of((byte) -1, (byte) 32);
@@ -368,6 +368,16 @@ public class SmallSetTest {
     assertEquals("(5)", of(5).toString());
     assertEquals("(5,31)", of(5, 31).toString());
     assertEquals("(1,2,3,5,9,17,31)", of(1, 2, 3, 5, 9, 17, 31).toString());
+
+    assertEquals("[]", empty().toString(", ", "[", "]"));
+    assertEquals("[5]", of(5).toString(", ", "[", "]"));
+    assertEquals("[5, 31]", of(5, 31).toString(", ", "[", "]"));
+    assertEquals("5/31", of(5, 31).toString("/", "", ""));
+    assertEquals("(1,2,3,5,9,17,31)", of(1, 2, 3, 5, 9, 17, 31).toString(",", "(", ")"));
+    assertEquals("( 0, 7, 8 )", of(0, 8, 7).toString(", ", "( ", " )"));
+    
+    assertEquals("(  )", empty().toString(Collectors.joining(", ", "( ", " )")));
+    assertEquals("( 0, 31 )", of(0, 31).toString(Collectors.joining(", ", "( ", " )")));
   }
 
   @Test
@@ -613,7 +623,7 @@ public class SmallSetTest {
   public void testCollect() throws Exception {
     final SmallSet all = empty().complement(); // = -1
     { // sequential [ x | 10 divides x ]:
-      final SmallSet by10 = collect(all.stream().filter(x -> x % 10 == 0));
+      final SmallSet by10 = all.stream().filter(x -> x % 10 == 0).collect(collector());
       assertEquals(of(List.of(0, 10, 20, 30)), by10);
     }
     { // sequential [ x | 10 divides x ]:
@@ -621,7 +631,7 @@ public class SmallSetTest {
       assertEquals(of(List.of(0, 10, 20, 30)), by10);
     }
     { // sequential [ x | 10 divides x ]:
-      final SmallSet by10 = collect(all.intStream().filter(x -> x % 10 == 0).mapToObj(Double::valueOf));
+      final SmallSet by10 = all.intStream().filter(x -> x % 10 == 0).mapToObj(Double::valueOf).collect(collector());
       assertEquals(of(List.of(0, 10, 20, 30)), by10);
     }
 
@@ -635,14 +645,20 @@ public class SmallSetTest {
         SmallSet actual = collect(all.intStream().parallel().filter(x -> x % 2 == 0));
         assertEquals(expected, actual);
         // Now with a Stream of Numbers (Bytes):
-        actual = collect(all.stream().parallel().filter(x -> x % 2 == 0).map(b -> b.intValue()));
+        actual = all.stream().parallel().filter(x -> x % 2 == 0).map(b -> b.intValue()).collect(collector());
         assertEquals(expected, actual);
       }
     }
 
     for (final Byte bad : BAD_VALUES) {
       assertThrows(IllegalArgumentException.class, () -> collect(IntStream.of(bad)), String.valueOf(bad));
-      assertThrows(IllegalArgumentException.class, () -> collect(Stream.of(bad)), String.valueOf(bad));
+      assertThrows(IllegalArgumentException.class, () -> Stream.of(bad).collect(collector()), String.valueOf(bad));
+    }
+    
+    {
+      assertEquals(all, all.stream().collect(collector()));
+      assertEquals(empty(), empty().stream().collect(collector()));
+      assertEquals(of(3, 8, 31), of(3, 8, 31).stream().collect(collector()));
     }
   }
 

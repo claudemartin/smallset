@@ -1,7 +1,6 @@
 package ch.claude_martin.smallset;
 
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 final class BasicByteSet extends AbstractByteSet {
@@ -83,6 +82,7 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public void forEach(final Consumer<? super Byte> action) {
+    Objects.requireNonNull(action, "action");
     this.set.forEach((ByteConsumer) action::accept);
   }
 
