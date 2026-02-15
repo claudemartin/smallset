@@ -26,14 +26,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   final static SmallSet                                         EMPTY            = new SmallSet(0);
 
-  private static final Collector<? extends Number, ?, SmallSet> COLLECTOR        = Collectors.collectingAndThen(
+  private static final Collector<? extends Number, ?, SmallSet> COLLECTOR        = 
       Collectors.mapping(
-          (Number num) -> new MutableInt(singleton(num)),
-          Collectors.reducing(new MutableInt(0), (a, b) -> {
-                                                             a.value |= b.value;
-                                                             return a;
-                                                           })),
-      mutableInt -> fromInt(mutableInt.value));
+          (Number num) -> singleton(num),
+          Collectors.reducing(empty(), SmallSet::union));
 
   /** A collector that accumulates numbers into a SmallSet. The resulting set contains all numbers from the stream.
    * Using the collector may throw {@link NullPointerException} or {@link IllegalArgumentException} if a number is null

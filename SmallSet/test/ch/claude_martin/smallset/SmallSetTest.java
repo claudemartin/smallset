@@ -623,16 +623,17 @@ public class SmallSetTest {
   public void testCollect() throws Exception {
     final SmallSet all = empty().complement(); // = -1
     { // sequential [ x | 10 divides x ]:
+      var list = all.stream().filter(x -> x % 10 == 0).toList();
       final SmallSet by10 = all.stream().filter(x -> x % 10 == 0).collect(collector());
-      assertEquals(of(List.of(0, 10, 20, 30)), by10);
+      assertEquals(of(0, 10, 20, 30), by10);
     }
     { // sequential [ x | 10 divides x ]:
       final SmallSet by10 = collect(all.intStream().filter(x -> x % 10 == 0));
-      assertEquals(of(List.of(0, 10, 20, 30)), by10);
+      assertEquals(of(0, 10, 20, 30), by10);
     }
     { // sequential [ x | 10 divides x ]:
       final SmallSet by10 = all.intStream().filter(x -> x % 10 == 0).mapToObj(Double::valueOf).collect(collector());
-      assertEquals(of(List.of(0, 10, 20, 30)), by10);
+      assertEquals(of(0, 10, 20, 30), by10);
     }
 
     { // parallel [ x | x is even ]:
