@@ -30,9 +30,9 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
       Collectors.mapping(
           (Number num) -> new MutableInt(singleton(num)),
           Collectors.reducing(new MutableInt(0), (a, b) -> {
-                                                                                           a.value |= b.value;
-                                                                                           return a;
-                                                                                         })),
+                                                             a.value |= b.value;
+                                                             return a;
+                                                           })),
       mutableInt -> fromInt(mutableInt.value));
 
   /** A collector that accumulates numbers into a SmallSet. The resulting set contains all numbers from the stream.
@@ -84,10 +84,10 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
       throw new IllegalArgumentException("infinite");
     }
     if (d > 31d) {
-      throw new IllegalArgumentException("out of range: i>31");
+      throw new IllegalArgumentException("out of range: n>31");
     }
     if (d < 0d) {
-      throw new IllegalArgumentException("out of range: i<0");
+      throw new IllegalArgumentException("out of range: n<0");
     }
 
     return n.byteValue();
@@ -447,12 +447,9 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     return new SmallSet(~this.value);
   }
 
-  /** Complement of a set. The domain is [min,..,max], both inclusive. */
-  public SmallSet complement(final int min, final int max) {
-    if (SmallSet.checkRange(min) > SmallSet.checkRange(max)) {
-      throw new IllegalArgumentException("max>min");
-    }
-    return new SmallSet(~this.value & SmallSet.ofRangeClosed(min, max).value);
+  /** Complement of a set. The domain is [from,..,toInclusive], both inclusive. */
+  public SmallSet complement(final int from, final int toInclusive) {
+     return new SmallSet(~this.value & SmallSet.ofRangeClosed(from, toInclusive).value);
   }
 
   /** Performs the given action for each byte until all bytes have been processed or the action throws an exception.
@@ -612,16 +609,16 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /** Closed Range of integers.
    *
-   * @param a
+   * @param from
    *          First element (inclusive)
-   * @param z
+   * @param toInclusive
    *          Last element (inclusive)
-   * @return <code>SmallSet.of(a, ... , z)</code> */
-  public static SmallSet ofRangeClosed(final int a, final int z) {
-    if (SmallSet.checkRange(a) > SmallSet.checkRange(z)) {
-      throw new IllegalArgumentException("z<a");
+   * @return <code>SmallSet.of(from, ... , toInclusive)</code> */
+  public static SmallSet ofRangeClosed(final int from, final int toInclusive) {
+    if (SmallSet.checkRange(from) > SmallSet.checkRange(toInclusive)) {
+      throw new IllegalArgumentException("toInclusive<from");
     }
-    return new SmallSet(SmallSet.lessOrEqual(z - a) << a);
+    return new SmallSet(SmallSet.lessOrEqual(toInclusive - from) << from);
   }
 
   /** From 0 (inclusive) to n (inclusive). The returned values has n+1 bits set to 1.
