@@ -3,7 +3,7 @@ package ch.claude_martin.smallset;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-/** Wraps some original ByteSet applying a subrange or inversion of order. It's never both. */
+/// Wraps some original ByteSet applying a subrange or inversion of order. It's never both.
 final class ModifiedByteSet extends AbstractByteSet {
   private final ByteSet  original;
   private final boolean  descending;

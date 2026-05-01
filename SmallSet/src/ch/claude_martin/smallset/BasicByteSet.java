@@ -6,11 +6,11 @@ import java.util.function.Consumer;
 final class BasicByteSet extends AbstractByteSet {
   private SmallSet set;
 
-  /** Creates an empty set. */
+  /// Creates an empty set.
   public BasicByteSet() {
   }
 
-  /** Creates a set containing the same values as the given set. */
+  /// Creates a set containing the same values as the given set.
   public BasicByteSet(final SmallSet set) {
     this.set = set;
   }
@@ -19,7 +19,7 @@ final class BasicByteSet extends AbstractByteSet {
     return b < 0 || b > 31;
   }
 
-  /** Removes the given byte. This does nothing and returns false if the given value is below 0 or greater than 31. */
+  /// Removes the given byte. This does nothing and returns false if the given value is below 0 or greater than 31.
   @Override
   public boolean remove(final byte element) {
     if (BasicByteSet.outOfRange(element)) {
@@ -28,9 +28,10 @@ final class BasicByteSet extends AbstractByteSet {
     return this.set != (this.set = this.set.remove(element));
   }
 
-  /** Removes the given element. Note that this will only remove Bytes, but not instances of {@link Integer} or other
-   * {@link Number}s. This does nothing and returns false, if the given value is below 0 or greater than 31.
-   * {@inheritDoc} */
+  /// Removes the given element. Note that this will only remove Bytes, but not instances of {@link Integer} or other
+  /// {@link Number}s. This does nothing and returns false, if the given value is below 0 or greater than 31.
+  /// 
+  /// {@inheritDoc}
   @Override
   public boolean remove(final Object o) {
     if (o instanceof final byte b && !BasicByteSet.outOfRange(b)) {
@@ -124,9 +125,9 @@ final class BasicByteSet extends AbstractByteSet {
     return this.set.size();
   }
 
-  /** Returns the hash code value for this set that is compatible with {@link Set#hashCode()}
-   *
-   * @see Set#hashCode() */
+  /// Returns the hash code value for this set that is compatible with {@link Set#hashCode()}
+  ///
+  /// @see Set#hashCode() *
   @Override
   public int hashCode() {
     int h = 0;

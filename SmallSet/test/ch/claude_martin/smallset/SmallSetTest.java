@@ -12,8 +12,7 @@ import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
+import java.util.function.*;
 import java.util.random.RandomGenerator;
 import java.util.stream.*;
 
@@ -22,11 +21,11 @@ import org.junit.jupiter.api.Test;
 
 public class SmallSetTest {
 
-  /** @see #testCollect() */
+  /// @see #testCollect()
   @BeforeAll
   public static void before() {
     // This leads to optimization, which reduces the overall time of the test run.
-   empty().complement().stream().parallel().filter(x -> x % 2 == 0).collect(collector());
+    empty().complement().stream().parallel().filter(x -> x % 2 == 0).collect(collector());
   }
 
   private static final List<Byte> BAD_VALUES = List.of((byte) -1, (byte) 32);
@@ -167,6 +166,7 @@ public class SmallSetTest {
   public void testContainsAll() throws Exception {
     final SmallSet oneTo5 = of(1, 2, 3, 4, 5);
     assertTrue(oneTo5.containsAll(oneTo5));
+    assertTrue(oneTo5.containsAll(List.of(BigDecimal.ONE, (byte) 2, (short) 3, 4, 5.0)));
     assertFalse(oneTo5.containsAll(empty().complement()));
     assertTrue(oneTo5.containsAll(oneTo5.toSet()));
     assertTrue(oneTo5.containsAll((byte) 3, (byte) 5));
@@ -375,9 +375,24 @@ public class SmallSetTest {
     assertEquals("5/31", of(5, 31).toString("/", "", ""));
     assertEquals("(1,2,3,5,9,17,31)", of(1, 2, 3, 5, 9, 17, 31).toString(",", "(", ")"));
     assertEquals("( 0, 7, 8 )", of(0, 8, 7).toString(", ", "( ", " )"));
-    
+
     assertEquals("(  )", empty().toString(Collectors.joining(", ", "( ", " )")));
     assertEquals("( 0, 31 )", of(0, 31).toString(Collectors.joining(", ", "( ", " )")));
+  }
+
+  @Test
+  public final void testToIntAndFromInt() {
+    final var data = of(3, 5, 7, 11, 13, 16, 18, 20, 22);
+    IntUnaryOperator leftShift = i -> 1 << i;
+    int expected = data.intStream().map(leftShift).sum();
+    assertEquals(expected, data.toInt());
+    assertEquals(data, fromInt(expected));
+
+    data.powerset().forEach(set -> {
+      int i = set.toInt();
+      assertEquals(set.intStream().map(leftShift).sum(), i, "toInt(" + set + ")");
+      assertEquals(set, fromInt(i), "fromInt(" + set + ")");
+    });
   }
 
   @Test
@@ -460,13 +475,8 @@ public class SmallSetTest {
   @Test
   public void testRandom() throws Exception {
     // Not random at all, so we should always easily find each value
-    final var rng = new RandomGenerator() {
+    final var rng = new Random() {
       char next = 0;
-
-      @Override
-      public long nextLong() {
-        return next++;
-      }
 
       @Override
       public int nextInt(int bound) {
@@ -506,14 +516,14 @@ public class SmallSetTest {
     throw new AssertionError(set + ".random(rng) never returned the value " + value);
   }
 
-  /* Enum with 32 elements. */
+  /// Enum with 32 elements.
   public static enum Alphabet {
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü, Ë, Ï, ẞ;
   }
 
   @Test
   public void testEnum() throws Exception {
-    SmallSet set1 = of(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü, Ë, Ï, ẞ);
+    SmallSet set1 = of(Alphabet.values());
     SmallSet set2 = of(EnumSet.allOf(Alphabet.class));
     assertEquals(set1, set2);
     assertEquals(set1.toEnumSet(Alphabet.class), EnumSet.allOf(Alphabet.class));
@@ -577,6 +587,62 @@ public class SmallSetTest {
     assertEquals(of(1, 4), of(1, 4).minus(empty()));
     assertEquals(empty(), empty().minus(of(8, 9)));
     assertEquals(empty(), empty().minus(empty()));
+  }
+
+  @Test
+  public void testFilter() throws Exception {
+    SmallSet set = empty().complement();
+
+    assertEquals(empty(), set.filter(e -> false));
+    assertEquals(set, set.filter(e -> true));
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(empty(), of(i).filter(e -> false));
+      assertEquals(of(i), of(i).filter(e -> true));
+      assertEquals(of(1, 4, 8, i), of(1, 4, 8, i).filter(e -> true));
+
+      for (int j = 0; j < 32; j++) {
+        for (int k = 0; k < 32; k++) {
+          final var x = of(5, i, j, k);
+          for (IntPredicate p : new IntPredicate[] {
+              e -> e % 2 == 1,
+              e -> e % 2 == 0,
+              e -> e % 3 == 0,
+              e -> e < 16,
+              e -> false,
+              e -> true
+          }) {
+            assertEquals(collect(x.intStream().filter(p)), x.filter(p));
+            assertEquals(collect(x.stream().filter(b -> p.test(b)).mapToInt(Byte::intValue)), x.filter(p));
+          }
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testMap() throws Exception {
+    SmallSet set = empty().complement();
+
+    assertEquals(set.stream().map(e -> false).toList(), set.map(e -> false));
+    assertEquals(set.stream().map(e -> "x").toList(), set.map(e -> "x"));
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(List.of(true), of(i).map(e -> true));
+
+      for (int j = 0; j < 32; j++) {
+        for (int k = 0; k < 32; k++) {
+          final var x = of(5, i, j, k);
+          for (var fn : new IntFunction[] {
+              e -> Objects.toString(e),
+              e -> "x",
+              e -> "i=" + e
+          }) {
+            assertEquals(x.intStream().mapToObj(fn).toList(), x.map(fn));
+          }
+        }
+      }
+    }
   }
 
   @Test
@@ -655,7 +721,7 @@ public class SmallSetTest {
       assertThrows(IllegalArgumentException.class, () -> collect(IntStream.of(bad)), String.valueOf(bad));
       assertThrows(IllegalArgumentException.class, () -> Stream.of(bad).collect(collector()), String.valueOf(bad));
     }
-    
+
     {
       assertEquals(all, all.stream().collect(collector()));
       assertEquals(empty(), empty().stream().collect(collector()));

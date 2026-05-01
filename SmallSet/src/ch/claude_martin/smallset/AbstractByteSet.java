@@ -2,7 +2,8 @@ package ch.claude_martin.smallset;
 
 import java.util.*;
 
-abstract class AbstractByteSet extends AbstractCollection<Byte> implements ByteSet {
+abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implements ByteSet
+    permits BasicByteSet, ModifiedByteSet {
 
   @Override
   public String toString() {
@@ -24,10 +25,10 @@ abstract class AbstractByteSet extends AbstractCollection<Byte> implements ByteS
     return h;
   }
 
-  /** Compares the specified object with this set for equality. The two sets can only be equal if both contain the same
-   * Byte objects.
-   *
-   * @see Set#equals(Object) */
+  /// Compares the specified object with this set for equality. The two sets can only be equal if both contain the same
+  /// Byte objects.
+  ///
+  /// @see Set#equals(Object) *
   @Override
   public boolean equals(final Object o) {
     if (this == o) {

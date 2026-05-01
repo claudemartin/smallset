@@ -6,20 +6,16 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.IntStream;
 
-/**
- * A container object which may or may not contain a {@code byte} value.
- * 
- * In a future release of Java this might be replaced by the type {@code byte?} (nullable primitive byte). 
- */
+/// A container object which may or may not contain a {@code byte} value.
+/// 
+/// In a future release of Java this might be replaced by the type {@code byte?} (nullable primitive byte). 
 public value class OptionalByte implements Serializable {
   private static final OptionalByte EMPTY = new OptionalByte();
 
   private final boolean             isPresent;
   private final byte                value;
 
-  /**
-   * Construct an empty instance.
-   */
+  /// Construct an empty instance.
   private OptionalByte() {
     this.isPresent = false;
     this.value = 0;
@@ -29,12 +25,9 @@ public value class OptionalByte implements Serializable {
     return OptionalByte.EMPTY;
   }
 
-  /**
-   * Construct an instance with the value present.
-   *
-   * @param value
-   *          the byte value to be present
-   */
+  /// Construct an instance with the value present.
+  /// 
+  /// @param value the byte value to be present
   private OptionalByte(final byte value) {
     this.isPresent = true;
     this.value = value;
