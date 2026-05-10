@@ -298,15 +298,6 @@ class Snippets {
     }
   }
 
-  void replaceAll() {
-    // @start region = replaceAll
-    SmallSet a = SmallSet.of(1, 2, 3);
-    SmallSet b = a.replaceAll(i -> ++i);
-    IO.println(b); // (2,3,4)
-    // @end region = replaceAll
-    assertEquals("(2,3,4)", b.toString());
-  }
-
   void union() {
     // @start region = union
     SmallSet a = SmallSet.of(1, 2, 3);
@@ -379,9 +370,18 @@ class Snippets {
 
   void map() {
     // @start region = map
-    SmallSet set = SmallSet.of(1, 2, 3);
-    List<String> strings = set.map(Objects::toString); // [ "1", "2", "3"]
+    SmallSet a = SmallSet.of(1, 2, 3);
+    SmallSet b = a.map(i -> ++i);
+    IO.println(b); // (2,3,4)
     // @end region = map
+    assertEquals("(2,3,4)", b.toString());
+  }
+  
+  void mapToObj() {
+    // @start region = mapToObj
+    SmallSet set = SmallSet.of(1, 2, 3);
+    List<String> strings = set.mapToObj(Objects::toString); // [ "1", "2", "3"]
+    // @end region = mapToObj
     assertEquals(List.of("1", "2", "3"), strings);
   }
 

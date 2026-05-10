@@ -10,7 +10,7 @@ import java.util.NavigableSet;
 /// 
 /// @see SmallSet#toSet()
 /// 
-/// @author Claude Martin *
+/// @author Claude Martin
 public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
   /// Removes the given byte value.

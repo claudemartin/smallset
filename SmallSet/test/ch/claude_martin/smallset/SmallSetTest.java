@@ -25,7 +25,17 @@ public class SmallSetTest {
   @BeforeAll
   public static void before() {
     // This leads to optimization, which reduces the overall time of the test run.
-    empty().complement().stream().parallel().filter(x -> x % 2 == 0).collect(collector());
+    empty().complement().remove(0)
+        .forEach(i -> {
+          var set = empty().complement()
+              .remove(i)
+              .union(of(i))
+              .stream()
+              .filter(x -> x % (i % 3 + 1) == 0)
+              .collect(collector());
+          var floor = ofRangeClosed(0, i).intersect(set.complement()).floor(8 + i / 2).orElse(i);
+          collect(ofRange(0, floor).intStream());
+        });
   }
 
   private static final List<Byte> BAD_VALUES = List.of((byte) -1, (byte) 32);
@@ -181,13 +191,24 @@ public class SmallSetTest {
     for (Alphabet a1 : alphabet) {
       assertTrue(az.containsAll(EnumSet.of(a1)));
       assertTrue(az.containsAll(List.of(a1.ordinal())));
+      assertTrue(az.containsAll(SmallSet.of(a1.ordinal())));
       for (Alphabet a2 : alphabet) {
         assertTrue(az.containsAll(EnumSet.of(a1, a2)));
         assertTrue(az.containsAll(List.of(a1.ordinal(), a2.ordinal())));
+        assertTrue(az.containsAll(SmallSet.of(a1.ordinal(), a2.ordinal())));
       }
       assertFalse(empty().containsAll(EnumSet.of(a1)));
       assertFalse(empty().containsAll(List.of(a1.ordinal())));
+      assertFalse(empty().containsAll(SmallSet.of(a1.ordinal())));
     }
+    
+    Set<Byte> x = Set.of((byte) 4,(byte) 7,(byte) 23);
+    SmallSet.of(1,4,7,9,10,13,17,23,31).powerset().forEach(set -> {
+      assertTrue(set.containsAll(set));
+      assertTrue(set.containsAll(empty()));
+      assertEquals(set.toSet().containsAll(x), set.containsAll(x));
+      assertFalse(set.containsAll(List.of((byte) 8)));
+    });
 
     assertThrows(NullPointerException.class, () -> of(1, 2, 3).containsAll((EnumSet<?>) null));
     assertThrows(NullPointerException.class, () -> of(1, 2, 3).containsAll((List<Integer>) null));
@@ -621,31 +642,6 @@ public class SmallSetTest {
   }
 
   @Test
-  public void testMap() throws Exception {
-    SmallSet set = empty().complement();
-
-    assertEquals(set.stream().map(e -> false).toList(), set.map(e -> false));
-    assertEquals(set.stream().map(e -> "x").toList(), set.map(e -> "x"));
-
-    for (int i = 0; i < 32; i++) {
-      assertEquals(List.of(true), of(i).map(e -> true));
-
-      for (int j = 0; j < 32; j++) {
-        for (int k = 0; k < 32; k++) {
-          final var x = of(5, i, j, k);
-          for (var fn : new IntFunction[] {
-              e -> Objects.toString(e),
-              e -> "x",
-              e -> "i=" + e
-          }) {
-            assertEquals(x.intStream().mapToObj(fn).toList(), x.map(fn));
-          }
-        }
-      }
-    }
-  }
-
-  @Test
   public void testForEach() throws Exception {
     final List<Byte> list = new ArrayList<>();
     of(1, 2, 3).forEach(list::add);
@@ -660,6 +656,8 @@ public class SmallSetTest {
     assertEquals(empty().stream().toList(), list);
 
     empty().forEach(n -> fail("iteration on empty set"));
+    
+    assertThrows(AssertionError.class, () -> of(15).forEach(i -> fail()));
   }
 
   @Test
@@ -867,32 +865,74 @@ public class SmallSetTest {
   }
 
   @Test
-  public void testReplaceAll() throws Exception {
-
-    assertEquals(empty(), empty().replaceAll(i -> i * 5));
+  public void testMap() throws Exception {
+    assertEquals(empty(), empty().map(i -> fail("map")));
 
     SmallSet set = of(6, 14, 30);
-    set = set.replaceAll(i -> i / 2);
+    set = set.map(i -> i / 2);
     assertEquals(of(3, 7, 15), set, set.toString());
 
     set = ofRange(0, 32);
-    set = set.replaceAll(i -> i);
+    set = set.map(i -> i);
     assertEquals(ofRange(0, 32), set, set.toString());
 
     set = ofRange(0, 32);
-    set = set.replaceAll(i -> -(i - 31));
+    set = set.map(i -> 12);
+    assertEquals(of(12), set, set.toString());
+
+    set = of(5, 6, 7);
+    set = set.map(i -> ++i);
+    assertEquals(of(6, 7, 8), set, set.toString());
+    
+    set = of(5, 6, 7);
+    set = set.map(i -> --i);
+    assertEquals(of(4, 5, 6), set, set.toString());
+    
+    set = ofRange(0, 32);
+    set = set.map(i -> -(i - 31));
     assertEquals(ofRange(0, 32), set, set.toString());
 
     set = ofRange(0, 6);
     for (int j = 0; j < 32 - 6; j++) {
-      set = set.replaceAll(i -> i + 1);
+      set = set.map(i -> i + 1);
       assertEquals(ofRange(j + 1, j + 7), set, set.toString());
     }
 
     for (final Byte b : BAD_VALUES) {
-      assertThrows(IllegalArgumentException.class, () -> of(15).replaceAll(i -> b));
+      assertThrows(IllegalArgumentException.class, () -> of(15).map(i -> b));
     }
+    
+    assertThrows(AssertionError.class, () -> of(15).map(i -> fail()));
   }
+  
+
+  @Test
+  public void testMapToObj() throws Exception {
+    SmallSet set = empty().complement();
+
+    assertEquals(set.stream().map(e -> false).toList(), set.mapToObj(e -> false));
+    assertEquals(set.stream().map(e -> "x").toList(), set.mapToObj(e -> "x"));
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(List.of(true), of(i).mapToObj(e -> true));
+
+      for (int j = 0; j < 32; j++) {
+        for (int k = 0; k < 32; k++) {
+          final var x = of(5, i, j, k);
+          for (var fn : new IntFunction[] {
+              e -> Objects.toString(e),
+              e -> "x",
+              e -> "i=" + e
+          }) {
+            assertEquals(x.intStream().mapToObj(fn).toList(), x.mapToObj(fn));
+          }
+        }
+      }
+    }
+    
+    assertThrows(AssertionError.class, () -> of(15).mapToObj(i -> fail()));
+  }
+
 
   @Test
   public void testToBitSet() throws Exception {
@@ -966,12 +1006,15 @@ public class SmallSetTest {
   public void testStability() throws Exception {
     // it's so darn fast that we can run this 67 108 864 times
     of(3, 7, 13, 15, 19, 26).complement().powerset().parallel().forEach(set -> {
-      set.remove(2).add(3).union(set).intersect(ofRange(0, 24)).replaceAll(i -> i++).complement().sum();
+      set.remove(2).add(3).union(set).intersect(ofRange(0, 24)).map(i -> i++).complement().sum();
       set.ceiling(5);
       set.floor(6);
       set.contains(7);
       set.min();
       set.toInt();
+      set.filter(i -> true);
+      set.mapToObj(Objects::toString);
+      set.map(i -> ++i % 32);
     });
   }
 

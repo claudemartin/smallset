@@ -28,7 +28,7 @@ public class Demo {
     IO.println(new Object[] { set1, set2 }); // [L
     // Older versions used to have [Q for arrays of value types
     // See: '4.3. Descriptors' in the latest JLS.
-    // https://docs.oracle.com/javase/specs/jvms/se23/html/jvms-4.html#jvms-4.3
+    // https://docs.oracle.com/javase/specs/jvms/se26/html/jvms-4.html#jvms-4.3
 
     IO.println();
     IO.println("Filtered power set:");
@@ -46,7 +46,7 @@ public class Demo {
     IO.println(java.util.Set.of(set1, set2));
     IO.println(java.util.Map.of(set1, set2));
 
-    // It's serialzeable and the copy is equal to the original:
+    // It's serializeable and the copy is equal to the original:
     try (final var bos = new ByteArrayOutputStream()) {
       try (final var oos = new ObjectOutputStream(bos)) {
         oos.writeObject(set1);

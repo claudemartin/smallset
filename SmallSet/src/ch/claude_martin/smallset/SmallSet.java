@@ -21,7 +21,7 @@ import java.util.stream.*;
 /// Sets can be compared but this is done on the bit field (int) and is only useful when used in a data structure based
 /// on sorting, such as a tree.
 ///
-/// @author Claude Martin 
+/// @author Claude Martin
 public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Serializable {
   private static final long                                     serialVersionUID = 1L;
 
@@ -466,12 +466,13 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
   /// Replaces each element of this set with the result of applying the operator to that element. Errors or runtime
   /// exceptions thrown by the operator are relayed to the caller.
   /// 
-  /// {@snippet file="Snippets.java" region="replaceAll"}   
+  /// {@snippet file="Snippets.java" region="map"}   
   /// 
+  /// @see #mapToObj(IntFunction)
   /// @param operator the operator to apply to each element
   /// @throws NullPointerException if the specified operator is null or if the operator result is a null value
   /// @throws IllegalArgumentException if the operator returns an invalid value
-  public SmallSet replaceAll(final IntUnaryOperator operator) {
+  public SmallSet map(final IntUnaryOperator operator) {
     requireNonNull(operator, "operator");
     if (this.isEmpty()) {
       return this;
@@ -486,6 +487,28 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     return result;
   }
 
+  /// Returns a list containing transformed elements from this set using the given
+  /// function. Same as `intStream().mapToObj(f).toList()` without the overhead of 
+  /// creating a stream.Errors or runtime exceptions thrown by the operator are 
+  /// relayed to the caller.
+  /// 
+  /// {@snippet file="Snippets.java" region="mapToObj"}
+  /// 
+  /// @see #map(IntUnaryOperator)
+  public <T> List<T> mapToObj(IntFunction<? extends T> mapping) {
+    requireNonNull(mapping, "mapping");
+    final int size = this.size();
+    if (size == 0) return Collections.emptyList();
+    var copy = this;
+    List<T> result = new ArrayList<T>(size);
+    while (!copy.isEmpty()) {
+      final var next = next(copy.value);
+      copy = copy.removeTrustedByte(next);
+      result.add(mapping.apply(next));
+    }
+    return Collections.unmodifiableList(result);
+  }
+  
   /// Union of two sets.
   /// 
   /// {@snippet file="Snippets.java" region="union"}   
@@ -548,24 +571,6 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
       if (predicate.test(next)) result = result | (1 << next);
     }
     return new SmallSet(result);
-  }
-  
-  /// Returns a list containing transformed elements from this set using the given
-  /// function. Same as `intStream().mapToObj(f).toList()` without the overhead of 
-  /// creating a stream.
-  /// 
-  /// {@snippet file="Snippets.java" region="map"}
-  public <T> List<T> map(IntFunction<? extends T> mapping) {
-    final int size = this.size();
-    if (size == 0) return Collections.emptyList();
-    var copy = this;
-    List<T> result = new ArrayList<T>(size);
-    while (!copy.isEmpty()) {
-      final var next = next(copy.value);
-      copy = copy.removeTrustedByte(next);
-      result.add(mapping.apply(next));
-    }
-    return Collections.unmodifiableList(result);
   }
   
   /// Creates an iterator for the set as bytes.
@@ -876,7 +881,7 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     final byte next = SmallSet.next(this.value);
     assert next >= 0 && next < 32;
     consumer.acceptAsByte(next);
-    return new SmallSet(this.value & ~(1 << next));
+    return this.removeTrustedByte(next);
   }
 
   /// Number of trailing zeroes. This is {@link Integer#numberOfTrailingZeros(int)} cast to {@code byte}, which is the

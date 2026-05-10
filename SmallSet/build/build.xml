@@ -92,6 +92,7 @@
 	<target name="test" depends="test-compile">
 		<java classpathref="testpath" classname="org.junit.platform.console.ConsoleLauncher" fork="true" failonerror="true">
 			<jvmarg value="--enable-preview" />
+			<jvmarg value="-enableassertions" />
 			<arg value="execute" />
 			<arg value="--select-package=${module}" />
 			<arg value="--include-classname=.*" />
