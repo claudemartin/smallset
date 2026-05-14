@@ -489,26 +489,40 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /// Returns a list containing transformed elements from this set using the given
   /// function. Same as `intStream().mapToObj(f).toList()` without the overhead of 
-  /// creating a stream.Errors or runtime exceptions thrown by the operator are 
+  /// creating a stream. Errors or runtime exceptions thrown by the operator are 
   /// relayed to the caller.
   /// 
   /// {@snippet file="Snippets.java" region="mapToObj"}
   /// 
   /// @see #map(IntUnaryOperator)
   public <T> List<T> mapToObj(IntFunction<? extends T> mapping) {
+    return Collections.unmodifiableList(this.<T, ArrayList<T>>mapToObj(mapping, ArrayList::new));
+  }
+  
+  /// Returns a collection containing transformed elements from this set using the given
+  /// function. Same as `intStream().mapToObj(f).collect(Collectors.toCollection(collectionFactory))`
+  /// without the overhead of creating a stream. Errors or runtime exceptions thrown by the operator 
+  /// are relayed to the caller.
+  /// 
+  /// {@snippet file="Snippets.java" region="mapToObj2"}
+  /// 
+  /// @see #map(IntUnaryOperator)
+  /// @see #toArray(IntFunction, IntFunction)
+  public <R, C extends Collection<R>> C mapToObj(final IntFunction<? extends R> mapping, final Supplier<C> collectionFactory) {
     requireNonNull(mapping, "mapping");
+    requireNonNull(collectionFactory, "collectionFactory");
     final int size = this.size();
-    if (size == 0) return Collections.emptyList();
+    final C result = collectionFactory.get();
+    if (size == 0) return result;
     var copy = this;
-    List<T> result = new ArrayList<T>(size);
     while (!copy.isEmpty()) {
       final var next = next(copy.value);
       copy = copy.removeTrustedByte(next);
       result.add(mapping.apply(next));
     }
-    return Collections.unmodifiableList(result);
+    return result;
   }
-  
+
   /// Union of two sets.
   /// 
   /// {@snippet file="Snippets.java" region="union"}   
@@ -638,10 +652,16 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
     };
   }
 
+  /// Creates a {@link Spliterator} over the values as int.
+  /// it is created with a given initially reported size.
+  /// 
+  /// @see #spliterator()
   public Spliterator.OfInt intSpliterator() {
     return this.intSpliterator(this.size());
   }
 
+  /// Creates a {@link Spliterator} over the values as int.
+  /// @see #spliterator()
   private Spliterator.OfInt intSpliterator(final int size) {
     return Spliterators.spliterator(this.intIterator(), size, SmallSet.CHARACTERISTICS);
   }
@@ -853,14 +873,18 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /// Creates a new array and fills it with the mapped values of this set. 
   /// 
-  /// {@snippet file="Snippets.java" region="toArray3"}     
-  public <T> T[] toArray(final IntFunction<T> mapper, final IntFunction<T[]> arrayFactory) {
+  /// {@snippet file="Snippets.java" region="toArray3"}   
+  /// 
+  /// @see #mapToObj(IntFunction, Supplier) 
+  public <T> T[] toArray(final IntFunction<T> mapping, final IntFunction<T[]> arrayFactory) {
+    requireNonNull(mapping, "mapping");
+    requireNonNull(arrayFactory, "arrayFactory");
     final var result = arrayFactory.apply(this.size());
     var copy = this;
     var index = 0;
     while (!copy.isEmpty()) {
       final var next = SmallSet.next(copy.value);
-      result[index++] = mapper.apply(next);
+      result[index++] = mapping.apply(next);
       copy = copy.removeTrustedByte(next);
     }
     return result;
@@ -905,8 +929,9 @@ public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Ser
 
   /// {@link EnumSet} of this set. This uses the {@link Enum#ordinal() ordinal} value. 
   /// 
-  /// {@snippet file="Snippets.java" region="toEnumSet"}   
-  public <E extends Enum<E>> EnumSet<E> toEnumSet(final Class<E> type) {
+  /// {@snippet file="Snippets.java" region="toEnumSet"}  
+  /// @throws ArrayIndexOutOfBoundsException when a value has no Enum constant with that ordinal value.
+  public <E extends Enum<E>> EnumSet<E> toEnumSet(final Class<E> type) throws ArrayIndexOutOfBoundsException {
     requireNonNull(type, "type");
     final EnumSet<E> result = EnumSet.noneOf(type);
     if (this.isEmpty()) {

@@ -18,8 +18,8 @@ import java.util.stream.*;
 
 import org.junit.jupiter.api.*;
 
-/// Snippets used in javadoc. See {@link Demo} for more examples.
-/// All methods are {@link #testAllSnippets() tested automatically}.
+/// Snippets used in javadoc. See {@link Demo} for more examples. All methods are {@link #testAllSnippets()
+/// tested automatically}.
 class Snippets {
 
   void classSmallSet() {
@@ -376,13 +376,22 @@ class Snippets {
     // @end region = map
     assertEquals("(2,3,4)", b.toString());
   }
-  
+
   void mapToObj() {
-    // @start region = mapToObj
-    SmallSet set = SmallSet.of(1, 2, 3);
-    List<String> strings = set.mapToObj(Objects::toString); // [ "1", "2", "3"]
-    // @end region = mapToObj
-    assertEquals(List.of("1", "2", "3"), strings);
+    {
+      // @start region = mapToObj
+      SmallSet set = SmallSet.of(1, 2, 3);
+      List<String> strings = set.mapToObj(Objects::toString); // [ "1", "2", "3"]
+      // @end region = mapToObj
+      assertEquals(List.of("1", "2", "3"), strings);
+    }
+    {
+      // @start region = mapToObj2
+      SmallSet set = SmallSet.of(1, 2, 3);
+      Set<String> strings = set.mapToObj(Objects::toString, TreeSet::new); // [ "1", "2", "3"]
+      // @end region = mapToObj2
+      assertEquals(Set.of("1", "2", "3"), strings);
+    }
   }
 
   void stream() {
@@ -699,7 +708,7 @@ class Snippets {
     // @end region = classSmallSet
   }
 
-  ///////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
 
   @TestFactory
   List<DynamicTest> testAllSnippets() throws Exception {

@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.*;
@@ -550,6 +551,7 @@ public class SmallSetTest {
     assertEquals(set1.toEnumSet(Alphabet.class), EnumSet.allOf(Alphabet.class));
     assertEquals(set1.toEnumSet(Alphabet.class), set2.toEnumSet(Alphabet.class));
     assertEquals(empty().toEnumSet(Alphabet.class), EnumSet.noneOf(Alphabet.class));
+    assertThrows(ArrayIndexOutOfBoundsException.class, () -> empty().complement().toEnumSet(java.time.Month.class));
 
     EnumSet<Alphabet> enumSet = set1.toEnumSet(Alphabet.class);
     assertEquals(EnumSet.allOf(Alphabet.class), enumSet);
@@ -912,18 +914,30 @@ public class SmallSetTest {
 
     assertEquals(set.stream().map(e -> false).toList(), set.mapToObj(e -> false));
     assertEquals(set.stream().map(e -> "x").toList(), set.mapToObj(e -> "x"));
-
+    
+    {
+      var actual = set.mapToObj(e -> false, HashSet::new);
+      var expected = set.stream().map(e -> false).collect(Collectors.toCollection(HashSet::new));
+      assertEquals(expected, actual);
+    }
+    {
+      var actual = set.mapToObj(e -> "x", LinkedList::new);
+      var expected = set.stream().map(e -> "x").collect(Collectors.toCollection(LinkedList::new));
+      assertEquals(expected, actual);
+    }
+    
     for (int i = 0; i < 32; i++) {
       assertEquals(List.of(true), of(i).mapToObj(e -> true));
 
       for (int j = 0; j < 32; j++) {
         for (int k = 0; k < 32; k++) {
           final var x = of(5, i, j, k);
-          for (var fn : new IntFunction[] {
-              e -> Objects.toString(e),
-              e -> "x",
+          for (var fn : new IntFunction<?>[] {
+              Objects::toString,
+              BigInteger::valueOf,
               e -> "i=" + e
           }) {
+            assertEquals((Set<?>) x.intStream().mapToObj(fn).collect(Collectors.toCollection(HashSet::new)), x.mapToObj(fn, HashSet::new));
             assertEquals(x.intStream().mapToObj(fn).toList(), x.mapToObj(fn));
           }
         }
