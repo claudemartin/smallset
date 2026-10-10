@@ -11,40 +11,42 @@ class ByteConsumerTest {
 
   final static byte           FIVE     = 5;
 
-  final AtomicReference<Byte> ref      = new AtomicReference<Byte>();
-  final ByteConsumer          consumer = ref::set;
+  final AtomicReference<Byte> ref      = new AtomicReference<>();
+  final ByteConsumer          consumer = this.ref::set;
 
   @BeforeEach
   public void before() {
-    ref.set((byte) -1);
+    this.ref.set((byte) -1);
   }
 
   @Test
   void testAcceptAsByte() {
-    consumer.acceptAsByte(FIVE);
-    assertEquals(ref.get(), FIVE);
+    this.consumer.acceptAsByte(ByteConsumerTest.FIVE);
+    assertEquals(this.ref.get(), ByteConsumerTest.FIVE);
   }
 
   @Test
   void testAccept() {
-    consumer.accept(FIVE);
-    assertEquals(ref.get(), FIVE);
+    this.consumer.accept(ByteConsumerTest.FIVE);
+    assertEquals(this.ref.get(), ByteConsumerTest.FIVE);
   }
 
   @Test
   void testAndThen() {
-    ByteConsumer noop = b -> {};
-    var c = noop.andThen(consumer);
-    c.acceptAsByte(FIVE);
-    assertEquals(ref.get(), FIVE);
+    ByteConsumer noop = b -> {
+    };
+    var c = noop.andThen(this.consumer);
+    c.acceptAsByte(ByteConsumerTest.FIVE);
+    assertEquals(this.ref.get(), ByteConsumerTest.FIVE);
   }
 
   @Test
   void testAndThenInt() {
-    ByteConsumer noop = b -> {};
-    var c = noop.andThenInt(i -> ref.set((byte) i));
-    c.acceptAsByte(FIVE);
-    assertEquals(ref.get(), FIVE);
+    ByteConsumer noop = b -> {
+    };
+    var c = noop.andThenInt(i -> this.ref.set((byte) i));
+    c.acceptAsByte(ByteConsumerTest.FIVE);
+    assertEquals(this.ref.get(), ByteConsumerTest.FIVE);
   }
 
 }

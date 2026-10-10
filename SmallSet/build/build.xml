@@ -98,7 +98,8 @@
 			<arg value="--include-classname=.*" />
 			<arg value="--fail-if-no-tests" />
 			<arg value="--reports-dir=reports" />
-			<arg value="--details=summary" />
+			<arg value="--details=summary" /><!-- summary or verbose -->
+			<arg value="--config=junit.platform.stacktrace.pruning.enabled=false" />
 		</java>
 	</target>
 

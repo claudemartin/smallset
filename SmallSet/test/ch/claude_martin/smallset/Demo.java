@@ -1,13 +1,16 @@
 package ch.claude_martin.smallset;
 
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.stream.Collectors;
 
 // This is just a simple demo of what my code does. Some of this will change with the next preview of Valhalla.
 
 public class Demo {
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     IO.println("Here we create sets and use them like values.");
     IO.println("But Java can actually use them like primitive integers.");
     final var set1 = SmallSet.of(1, 2, 3);
@@ -39,7 +42,7 @@ public class Demo {
     IO.println("You can still use it as a referenced object:");
 
     final Object o = set1; // Now it's in the heap memory
-    printObject(o, set1, set2); // must be passed as a reference
+    Demo.printObject(o, set1, set2); // must be passed as a reference
 
     IO.println();
     IO.println(java.util.List.of(set1, set2));
@@ -59,11 +62,10 @@ public class Demo {
       e.printStackTrace();
     }
 
-
     Sudoku.demo();
   }
 
-  private static void printObject(Object o, Object set1, Object set2) {
+  private static void printObject(final Object o, final Object set1, final Object set2) {
     // This method must treat the set as an object (i.e. "o" is a reference)
     IO.println(o); // Uses custom toString implementation
     IO.println(o.hashCode()); // based on the 'value' field

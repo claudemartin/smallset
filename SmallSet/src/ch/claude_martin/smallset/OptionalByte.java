@@ -2,13 +2,21 @@ package ch.claude_martin.smallset;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.*;
-import java.util.function.*;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
 /// A container object which may or may not contain a {@code byte} value.
-/// 
-/// In a future release of Java this might be replaced by the type {@code byte?} (nullable primitive byte). 
+///
+/// In a future release of Java this might be replaced by the type {@code byte?} (nullable primitive byte).
 public value class OptionalByte implements Serializable {
   private static final OptionalByte EMPTY = new OptionalByte();
 
@@ -26,8 +34,9 @@ public value class OptionalByte implements Serializable {
   }
 
   /// Construct an instance with the value present.
-  /// 
-  /// @param value the byte value to be present
+  ///
+  /// @param value
+  ///          the byte value to be present
   private OptionalByte(final byte value) {
     this.isPresent = true;
     this.value = value;
@@ -148,7 +157,7 @@ public value class OptionalByte implements Serializable {
   public OptionalInt toOptionalInt() {
     return this.isEmpty() ? OptionalInt.empty() : OptionalInt.of(this.value);
   }
-  
+
   public <U> Optional<U> mapToObj(final Function<Byte, ? extends U> mapper) {
     if (!this.isPresent) {
       return Optional.empty();
@@ -169,13 +178,13 @@ public value class OptionalByte implements Serializable {
     }
     return OptionalByte.of(mapper.apply(this.value));
   }
-  
+
   public OptionalByte filter(final Predicate<? super Byte> predicate) {
     Objects.requireNonNull(predicate);
     if (this.isEmpty()) {
-        return this;
+      return this;
     } else {
-        return predicate.test(this.value) ? this : OptionalByte.empty();
+      return predicate.test(this.value) ? this : OptionalByte.empty();
     }
   }
 
@@ -189,16 +198,16 @@ public value class OptionalByte implements Serializable {
   Object writeReplace() {
     return new Proxy(this.isPresent, this.value);
   }
-  
+
   @java.io.Serial
-  private void readObject(java.io.ObjectInputStream s)
+  private void readObject(final java.io.ObjectInputStream s)
       throws java.io.InvalidObjectException {
-      throw new java.io.InvalidObjectException("Proxy required");
+    throw new java.io.InvalidObjectException("Proxy required");
   }
 
   @java.io.Serial
   private void readObjectNoData()
       throws java.io.InvalidObjectException {
-      throw new java.io.InvalidObjectException("Proxy required");
+    throw new java.io.InvalidObjectException("Proxy required");
   }
 }

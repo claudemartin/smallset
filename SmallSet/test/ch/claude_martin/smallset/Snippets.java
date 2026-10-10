@@ -3,20 +3,27 @@ package ch.claude_martin.smallset;
 import static ch.claude_martin.smallset.SmallSet.of;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.*;
-import java.nio.file.attribute.PosixFilePermission;
-import java.security.SecureRandom;
+import java.nio.file.AccessMode;
 import java.time.Month;
-import java.time.format.TextStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.random.RandomGenerator;
-import java.util.stream.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 
 /// Snippets used in javadoc. See {@link Demo} for more examples. All methods are {@link #testAllSnippets()
 /// tested automatically}.
@@ -192,7 +199,7 @@ class Snippets {
     }
     {
       // @start region = containsAllEnums
-      SmallSet accessModes = getAccessModes();
+      SmallSet accessModes = this.getAccessModes();
       boolean ok = accessModes.containsAll(EnumSet.of(AccessMode.READ, AccessMode.WRITE));
       // @end region = containsAllEnums
       assertFalse(ok);
@@ -424,6 +431,14 @@ class Snippets {
     IO.println(set); // (1,2,3)
     // @end region = ofRange
     assertEquals("(1,2,3)", set.toString());
+  }
+
+  void ofRange2() {
+    // @start region = ofRange2
+    SmallSet set = SmallSet.ofRange(1, false, 4, true);
+    IO.println(set); // (2,3,4)
+    // @end region = ofRange2
+    assertEquals("(2,3,4)", set.toString());
   }
 
   void ofRangeClosed() {
@@ -708,7 +723,7 @@ class Snippets {
     // @end region = classBasicByteSet
   }
 
-  //////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
 
   @TestFactory
   List<DynamicTest> testAllSnippets() throws Exception {

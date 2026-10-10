@@ -1,8 +1,16 @@
 package ch.claude_martin.smallset;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
@@ -12,15 +20,19 @@ import java.util.stream.Stream;
 public class Sudoku implements Cloneable {
   enum State {
     /// Solved and all values are valid. *
-    SOLVED, /// Not solved but maybe it can be solved. *
-    UNSOLVED, /// Can't be solved. *
+    SOLVED,
+    /// Not solved but maybe it can be solved. *
+    UNSOLVED,
+    /// Can't be solved. *
     INVALID;
   }
 
   enum Mode {
     /// Find first solution. Pick random numbers. *
-    GENERATE, /// Find any solution. Used to find the first best solution. *
-    FIND_ANY, /// Find up to two solutions. Used to check that there is only one. *
+    GENERATE,
+    /// Find any solution. Used to find the first best solution. *
+    FIND_ANY,
+    /// Find up to two solutions. Used to check that there is only one. *
     FIND_TWO;
   }
 
@@ -83,7 +95,7 @@ public class Sudoku implements Cloneable {
   }
 
   /// Create sudoku from given string. Line breaks are ignored. Space, 0, and _ is interpreted as empty. *
-  public Sudoku(String string) {
+  public Sudoku(final String string) {
     this(string.codePoints()
         .mapToObj(chr -> switch (chr) {
           case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> SmallSet.singleton(chr - '0');
@@ -105,7 +117,7 @@ public class Sudoku implements Cloneable {
 
   @Override
   public Sudoku clone() {
-    var gridCopy = new SmallSet[9 * 9];
+    final var gridCopy = new SmallSet[9 * 9];
     System.arraycopy(this.grid, 0, gridCopy, 0, 9 * 9);
     return new Sudoku(gridCopy);
   }
@@ -122,7 +134,7 @@ public class Sudoku implements Cloneable {
     return result;
   }
 
-  /// This is the most basic approach. This might already solve it. it returns true if anything was changed. 
+  /// This is the most basic approach. This might already solve it. it returns true if anything was changed.
   private void basic() {
     int max = 1000; // just to be absolutely sure we don't end in an endless loop.
     while (true) {
@@ -289,13 +301,13 @@ public class Sudoku implements Cloneable {
     }
   }
 
-  /// Finds and returns a solution. This doesn't check if there are more solutions. 
+  /// Finds and returns a solution. This doesn't check if there are more solutions.
   public Sudoku solve() {
     final ForkJoinPool commonPool = ForkJoinPool.commonPool();
     return commonPool.invoke(new BruteForce(Mode.FIND_ANY, this.clone()));
   }
 
-  /// Checks if there are more than one solution. 
+  /// Checks if there are more than one solution.
   private boolean hasMultipleSolutions() {
     final ForkJoinPool commonPool = ForkJoinPool.commonPool();
     final BruteForce task = new BruteForce(Mode.FIND_TWO, this);
@@ -306,7 +318,7 @@ public class Sudoku implements Cloneable {
   public record SolvedSudoku(Sudoku sudoku, Sudoku solution) {
   }
 
-  /// Generates a random Sudoku. 
+  /// Generates a random Sudoku.
   static SolvedSudoku generate(final int seconds) {
     final var seed = new Sudoku();
     final var rng = ThreadLocalRandom.current();
@@ -339,7 +351,7 @@ public class Sudoku implements Cloneable {
           try {
             final var sudoku = Sudoku.createFromSolution(solution);
             candidate.accumulateAndGet(sudoku, (a, b) -> a == null ? b : (a.clues() < b.clues() ? a : b));
-          } catch (InterruptedException e) {
+          } catch (final InterruptedException e) {
             return;
           }
         }
@@ -359,7 +371,7 @@ public class Sudoku implements Cloneable {
     return new SolvedSudoku(candidate.get(), solution);
   }
 
-  /// Clone and then remove numbers at random positions for as long as there is more than one solution. 
+  /// Clone and then remove numbers at random positions for as long as there is more than one solution.
   private static Sudoku createFromSolution(final Sudoku solution) throws InterruptedException {
     Sudoku sudoku = solution;
     final var rng = ThreadLocalRandom.current();
@@ -393,7 +405,7 @@ public class Sudoku implements Cloneable {
     return this.grid[9 * row + col].size() == 1;
   }
 
-  /// Returns array of all the subgrid positions that contains the given position. 
+  /// Returns array of all the subgrid positions that contains the given position.
   int[] subgrid(final int pos) {
     // switch-case is probably faster than calculating it for each call
     final int i = switch (pos) {
@@ -413,12 +425,12 @@ public class Sudoku implements Cloneable {
     return Sudoku.SUBGRID_POSITIONS[i];
   }
 
-  /// Returns array of all the row positions that contains the given position. 
+  /// Returns array of all the row positions that contains the given position.
   private int[] row(final int pos) {
     return Sudoku.ROW_POSITIONS[pos / 9];
   }
 
-  /// Returns array of all the column positions that contains the given position. 
+  /// Returns array of all the column positions that contains the given position.
   private int[] column(final int pos) {
     return Sudoku.COLUMN_POSITIONS[pos % 9];
   }
@@ -531,7 +543,7 @@ public class Sudoku implements Cloneable {
     return result;
   }
 
-  /// This sudoku as a String. 
+  /// This sudoku as a String.
   @Override
   public String toString() {
     final StringBuilder b = new StringBuilder(81);
@@ -552,14 +564,9 @@ public class Sudoku implements Cloneable {
         }
         final SmallSet value = this.get(row, col);
         switch (value.size()) {
-          case 1:
-            System.out.print(value.singleElement().orElseThrow());
-            break;
-          case 0:
-            System.out.print('X');
-            break;
-          default:
-            System.out.print(' ');
+          case 1 -> System.out.print(value.singleElement().orElseThrow());
+          case 0 -> System.out.print('X');
+          default -> System.out.print(' ');
         }
       }
       System.out.println('|');

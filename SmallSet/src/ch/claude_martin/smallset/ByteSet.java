@@ -4,21 +4,21 @@ import java.util.NavigableSet;
 
 /// A mutable, navigable view of a {@link SmallSet}. Basic operations are done with the given {@link SmallSet} value.
 /// This implements {@link NavigableSet}. This implementation is not thread-safe. This data structure can contains the
-/// values 0 (inclusive) to 31 (exclusive).
-/// 
+/// values 0 (inclusive) to 31 (exclusive), but this set might be a subset with a smaller range.
+///
 /// {@snippet file = "Snippets.java" region = "classBasicByteSet"}
-/// 
+///
 /// @see SmallSet#toSet()
-/// 
+///
 /// @author Claude Martin
+///
 public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
-  /// Removes the given byte value. This does nothing and returns false if the given value is below 0 or greater
-  /// than 31.
+  /// Removes the given byte value. This does nothing and returns false if the given value is out of range.
   public boolean remove(byte element);
 
   /// {@inheritDoc}
-  /// 
+  ///
   /// Be careful that you don't call this with an {@link Integer} by mistake, as this set can't contain an object of
   /// that type.
   @Override
@@ -34,7 +34,7 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
   public boolean contains(final byte v);
 
   /// {@inheritDoc}
-  /// 
+  ///
   /// Be careful that you don't call this with an {@link Integer} by mistake, as this set can't contain an object of
   /// that type.
   @Override
@@ -56,6 +56,9 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
   public OptionalByte pollLastAsOptionalByte();
 
+  /// Adds multiple values.
+  ///
+  /// @see #addAll(java.util.Collection)
   public boolean addAll(byte... c);
 
   @Override
@@ -65,7 +68,9 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
   public ByteIterator descendingIterator();
 
   @Override
-  public ByteSet reversed();
+  public default ByteSet reversed() {
+    return this.descendingSet();
+  }
 
   @Override
   ByteSet descendingSet();

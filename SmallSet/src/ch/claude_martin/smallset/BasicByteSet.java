@@ -1,18 +1,23 @@
 package ch.claude_martin.smallset;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Spliterator;
 import java.util.function.Consumer;
 
 final class BasicByteSet extends AbstractByteSet {
-  private SmallSet set;
-
-  /// Creates an empty set.
-  public BasicByteSet() {
-  }
+  private static final Range RANGE = new Range((byte) 0, true, (byte) 32, false);
+  private SmallSet           set;
 
   /// Creates a set containing the same values as the given set.
-  public BasicByteSet(final SmallSet set) {
+  private BasicByteSet(final SmallSet set) {
     this.set = set;
+  }
+
+  static BasicByteSet of(final SmallSet set) {
+    return new BasicByteSet(set);
   }
 
   private static boolean outOfRange(final byte b) {
@@ -29,11 +34,11 @@ final class BasicByteSet extends AbstractByteSet {
 
   /// Removes the given element. Note that this will only remove Bytes, but not instances of {@link Integer} or other
   /// {@link Number}s. This does nothing and returns false, if the given value is below 0 or greater than 31.
-  /// 
+  ///
   /// {@inheritDoc}
   @Override
   public boolean remove(final Object o) {
-    return o instanceof byte b && !BasicByteSet.outOfRange(b) && this.remove(b);
+    return o instanceof final byte b && !BasicByteSet.outOfRange(b) && this.remove(b);
   }
 
   @Override
@@ -66,7 +71,7 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public boolean contains(final Object o) {
-    return o instanceof byte b && this.set.contains(b);
+    return o instanceof final byte b && this.set.contains(b);
   }
 
   @Override
@@ -145,13 +150,18 @@ final class BasicByteSet extends AbstractByteSet {
   }
 
   @Override
-  public ByteSet descendingSet() {
-    return ModifiedByteSet.reversed(this);
+  public Comparator<? super Byte> comparator() {
+    return AbstractByteSet.NATURAL_ORDER;
   }
 
   @Override
-  public ByteSet reversed() {
-    return ModifiedByteSet.reversed(this);
+  protected boolean isNaturalOrder() {
+    return true;
+  }
+
+  @Override
+  public ByteSet descendingSet() {
+    return ReversedByteSet.of(this);
   }
 
   @Override
@@ -160,11 +170,16 @@ final class BasicByteSet extends AbstractByteSet {
   }
 
   @Override
-  public ByteSet abstractSubSet(final byte fromElement, final byte toElement) {
+  public ByteSet subSet(final Byte fromElement, final Byte toElement) {
     if (fromElement == 0 && toElement == Integer.SIZE) {
       return this;
     }
-    return ModifiedByteSet.ranged(this, SmallSet.ofRange(fromElement, toElement));
+    return SubByteSet.of(this, new Range(fromElement, toElement));
+  }
+
+  @Override
+  public Range range() {
+    return BasicByteSet.RANGE;
   }
 
   @Override
@@ -186,9 +201,106 @@ final class BasicByteSet extends AbstractByteSet {
     this.set = this.set.remove(last);
     return last;
   }
-  
+
+  @Override
+  public Byte first() {
+    if (this.isEmpty()) {
+      throw new NoSuchElementException();
+    }
+    return (byte) Integer.numberOfTrailingZeros(this.set.value);
+  }
+
+  @Override
+  public Byte last() {
+    if (this.isEmpty()) {
+      throw new NoSuchElementException();
+    }
+    return (byte) (31 - Integer.numberOfLeadingZeros(this.set.value));
+  }
+
+  @Override
+  public Byte lower(final Byte e) {
+    return this.set.lower(e).orNull();
+  }
+
+  @Override
+  public Byte floor(final Byte e) {
+    return this.set.floor(e).orNull();
+  }
+
+  @Override
+  public Byte ceiling(final Byte e) {
+    return this.set.ceiling(e).orNull();
+  }
+
+  @Override
+  public Byte higher(final Byte e) {
+    return this.set.higher(e).orNull();
+  }
+
+  @Override
+  public OptionalByte firstAsOptionalByte() {
+    return this.set.min();
+  }
+
+  @Override
+  public OptionalByte lastAsOptionalByte() {
+    return this.set.max();
+  }
+
+  @Override
+  public OptionalByte lowerAsOptionalByte(final Byte e) {
+    return this.set.lower(e);
+  }
+
+  @Override
+  public OptionalByte floorAsOptionalByte(final Byte e) {
+    return this.set.floor(e);
+  }
+
+  @Override
+  public OptionalByte ceilingAsOptionalByte(final Byte e) {
+    return this.set.ceiling(e);
+  }
+
+  @Override
+  public OptionalByte higherAsOptionalByte(final Byte e) {
+    return this.set.higher(e);
+  }
+
+  @Override
+  public OptionalByte pollFirstAsOptionalByte() {
+    return OptionalByte.ofNullable(this.pollFirst());
+  }
+
+  @Override
+  public OptionalByte pollLastAsOptionalByte() {
+    return OptionalByte.ofNullable(this.pollLast());
+  }
+
+  @Override
+  public Byte[] toArray() {
+    final int size = this.set.size();
+    final Byte[] result = new Byte[size];
+    int i = 0;
+    for (final Byte n : this.set) {
+      result[i++] = n;
+    }
+    return result;
+  }
+
+  @Override
+  public <T> T[] toArray(final T[] a) {
+    return super.toArray(a);
+  }
+
   @Override
   public Spliterator<Byte> spliterator() {
     return this.set.spliterator();
+  }
+
+  @Override
+  public String debug() {
+    return this.toString();
   }
 }
