@@ -12,11 +12,11 @@ import java.util.stream.*;
 
 /// Value class for sets of small integers (in the range of 0 to 31, inclusive).
 ///
-/// Iteration is possible with {@link #iterator()}. {@link #forEach(ByteConsumer)} does the same but doesn't require an
-/// iterator object.
+/// Iteration is possible with {@link #iterator()}. The method {@link #forEach(ByteConsumer)} does the same but 
+/// doesn't require an iterator object.
 /// 
 /// Example:
-///{@snippet file="Snippets.java" region="classSmallSet"}
+/// {@snippet file="Snippets.java" region="classSmallSet"}
 /// 
 /// Sets can be compared but this is done on the bit field (int) and is only useful when used in a data structure based
 /// on sorting, such as a tree.

@@ -473,6 +473,7 @@ public class SmallSetTest {
     assertArrayEquals(new Byte[0], empty().toArray(i -> fail(), Byte[]::new));
     assertArrayEquals(new Integer[] { 7 }, of(7).toArray(i -> i, Integer[]::new));
     assertArrayEquals(new BigInteger[] { BigInteger.TWO }, of(2).toArray(BigInteger::valueOf, BigInteger[]::new));
+    assertArrayEquals(new OptionalByte[] { OptionalByte.of(2) }, of(2).toArray(OptionalByte::of, OptionalByte[]::new));
 
     Stream.concat(of(0, 1, 17, 31).powerset(), Stream.of(empty().complement()))
         .forEach(set -> {
@@ -529,6 +530,25 @@ public class SmallSetTest {
 
     set.random(rng, b -> i.incrementAndGet());
     assertEquals(1, i.get());
+    
+    // Now we test the distribution with a real RNG.
+    checkDistribution(set);
+    checkDistribution(empty().complement());
+    checkDistribution(of(1, 2, 5, 11, 14, 17, 22, 25, 27, 28, 30));
+  }
+  
+  private void checkDistribution(SmallSet set) {
+    final var rng2 = new SecureRandom(set.toArray());
+    final Map<Byte, Integer> distribution = new HashMap<>();
+    final int accessCount = 1_000_000;
+    for (int j = 0; j < accessCount; j++) {
+      set.random(rng2, b -> distribution.compute(b, (_, value) -> value == null ? 1 : ++value));
+    }
+    final double min = accessCount * 0.9d / set.size();
+    final double max = accessCount * 1.1d / set.size();
+    distribution.forEach((b, n) -> {
+      assertTrue(n >= min && n <= max);
+    });
   }
 
   private boolean findRandom(RandomGenerator rng, SmallSet set, byte value) {

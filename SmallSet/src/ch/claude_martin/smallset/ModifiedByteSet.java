@@ -1,7 +1,6 @@
 package ch.claude_martin.smallset;
 
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 
 /// Wraps some original ByteSet applying a subrange or inversion of order. It's never both.
 final class ModifiedByteSet extends AbstractByteSet {
@@ -75,8 +74,8 @@ final class ModifiedByteSet extends AbstractByteSet {
   @Override
   public ByteIterator iterator() {
     return new ByteIterator() {
-      private SmallSet remaining = ModifiedByteSet.this.toSmallSet();
-      private byte     lastRet   = -1;
+      private SmallSet remaining    = ModifiedByteSet.this.toSmallSet();
+      private byte     lastReturned = -1;
 
       @Override
       public boolean hasNext() {
@@ -88,16 +87,16 @@ final class ModifiedByteSet extends AbstractByteSet {
         final byte next = (ModifiedByteSet.this.descending ? this.remaining.max() : this.remaining.min())
             .orElseThrow(NoSuchElementException::new);
         this.remaining = this.remaining.remove(next);
-        return this.lastRet = next;
+        return this.lastReturned = next;
       }
 
       @Override
       public void remove() {
-        if (this.lastRet == -1) {
+        if (this.lastReturned == -1) {
           throw new IllegalStateException();
         }
-        ModifiedByteSet.this.remove(this.lastRet);
-        this.lastRet = -1;
+        ModifiedByteSet.this.remove(this.lastReturned);
+        this.lastReturned = -1;
       }
     };
   }
@@ -149,5 +148,12 @@ final class ModifiedByteSet extends AbstractByteSet {
       return this;
     }
     return ModifiedByteSet.ranged(this, newRange);
+  }
+  
+  @Override
+  public Spliterator<Byte> spliterator() {
+    // Technically, a reversed set is still sorted, but using a specific spliterator is not worth it.
+    return Spliterators.spliterator(this, Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED
+        | Spliterator.DISTINCT | (this.descending ? 0 : Spliterator.SORTED));
   }
 }

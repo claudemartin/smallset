@@ -700,12 +700,12 @@ class Snippets {
   }
 
   void classBasicByteSet() {
-    // @start region = classSmallSet
+    // @start region = classBasicByteSet
     SmallSet set = SmallSet.of(1, 5, 23); // @replace substring = '1, 2, 3' replacement = '...'
     ByteSet mutableSet = set.toSet();
     mutableSet.add((byte) 7);
     set = mutableSet.toSmallSet();
-    // @end region = classSmallSet
+    // @end region = classBasicByteSet
   }
 
   //////////////////////////////////////////////////////////

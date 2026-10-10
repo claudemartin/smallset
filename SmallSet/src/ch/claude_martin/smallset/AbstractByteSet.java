@@ -1,6 +1,8 @@
 package ch.claude_martin.smallset;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implements ByteSet
     permits BasicByteSet, ModifiedByteSet {

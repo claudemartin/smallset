@@ -113,12 +113,19 @@ class OptionalByteTest {
     assertEquals(EMPTY, EMPTY);
     assertEquals(OPT_FIVE, OPT_FIVE);
     assertNotEquals(EMPTY, OPT_FIVE);
+    assertNotEquals(OPT_FIVE, EMPTY);
   }
 
   @Test
   void testToString() {
     assertEquals("OptionalByte.empty", EMPTY.toString());
     assertEquals("OptionalByte[5]", OPT_FIVE.toString());
+  }
+  
+  @Test
+  void testToOptionalInt() {
+    assertEquals(OptionalInt.empty(), EMPTY.toOptionalInt());
+    assertEquals(OptionalInt.of(FIVE), OPT_FIVE.toOptionalInt());
   }
 
   @Test
@@ -131,15 +138,17 @@ class OptionalByteTest {
   @Test
   void testMapToInt() {
     assertEquals(OptionalInt.of(FIVE), OPT_FIVE.mapToInt(b -> b));
-    assertEquals(OptionalInt.of(7), OPT_FIVE.mapToInt(b -> 7));
-    assertEquals(OptionalInt.empty(), EMPTY.mapToInt(b -> 7));
+    assertEquals(OptionalInt.of(7), OPT_FIVE.mapToInt(b -> b + 2));
+    assertEquals(OptionalInt.of(7), OPT_FIVE.mapToInt(_ -> 7));
+    assertEquals(OptionalInt.empty(), EMPTY.mapToInt(_ -> 7));
   }
 
   @Test
   void testMap() {
     assertEquals(OptionalByte.of(FIVE), OPT_FIVE.map(b -> b));
-    assertEquals(OptionalByte.of(7), OPT_FIVE.map(b -> 7));
-    assertEquals(OptionalByte.empty(), EMPTY.map(b -> 7));
+    assertEquals(OptionalByte.of(7), OPT_FIVE.map(b -> (byte) (b + 2)));
+    assertEquals(OptionalByte.of(7), OPT_FIVE.map(_ -> 7));
+    assertEquals(OptionalByte.empty(), EMPTY.map(_ -> 7));
   }
 
   @Test
@@ -159,9 +168,9 @@ class OptionalByteTest {
 
   @Test
   public void testFilter() {
-    assertSame(OptionalByte.empty(), OptionalByte.empty().filter(x -> true));
-    assertSame(OptionalByte.empty(), OptionalByte.empty().filter(x -> false));
-    assertEquals(OptionalByte.empty(), OptionalByte.of(4).filter(x -> false));
+    assertSame(OptionalByte.empty(), OptionalByte.empty().filter(_ -> true));
+    assertSame(OptionalByte.empty(), OptionalByte.empty().filter(_ -> false));
+    assertEquals(OptionalByte.empty(), OptionalByte.of(4).filter(_ -> false));
     assertEquals(OptionalByte.empty(), OptionalByte.of(4).filter(x -> x == -1));
     assertEquals(OptionalByte.of(4), OptionalByte.of(4).filter(x -> x == 4));
   }

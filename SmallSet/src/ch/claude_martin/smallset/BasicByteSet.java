@@ -19,7 +19,6 @@ final class BasicByteSet extends AbstractByteSet {
     return b < 0 || b > 31;
   }
 
-  /// Removes the given byte. This does nothing and returns false if the given value is below 0 or greater than 31.
   @Override
   public boolean remove(final byte element) {
     if (BasicByteSet.outOfRange(element)) {
@@ -34,10 +33,7 @@ final class BasicByteSet extends AbstractByteSet {
   /// {@inheritDoc}
   @Override
   public boolean remove(final Object o) {
-    if (o instanceof final byte b && !BasicByteSet.outOfRange(b)) {
-      return this.remove(b);
-    }
-    return false;
+    return o instanceof byte b && !BasicByteSet.outOfRange(b) && this.remove(b);
   }
 
   @Override
@@ -70,10 +66,7 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public boolean contains(final Object o) {
-    if (o instanceof final byte b) {
-      return this.set.contains(b);
-    }
-    return false;
+    return o instanceof byte b && this.set.contains(b);
   }
 
   @Override
@@ -90,8 +83,8 @@ final class BasicByteSet extends AbstractByteSet {
   @Override
   public ByteIterator iterator() {
     return new ByteIterator() {
-      private SmallSet remaining = BasicByteSet.this.set;
-      private byte     lastRet   = -1;
+      private SmallSet remaining    = BasicByteSet.this.set;
+      private byte     lastReturned = -1;
 
       @Override
       public boolean hasNext() {
@@ -105,16 +98,16 @@ final class BasicByteSet extends AbstractByteSet {
         }
         final byte next = (byte) Integer.numberOfTrailingZeros(this.remaining.value);
         this.remaining = this.remaining.remove(next);
-        return this.lastRet = next;
+        return this.lastReturned = next;
       }
 
       @Override
       public void remove() {
-        if (this.lastRet == -1) {
+        if (this.lastReturned == -1) {
           throw new IllegalStateException();
         }
-        BasicByteSet.this.set = BasicByteSet.this.set.remove(this.lastRet);
-        this.lastRet = -1;
+        BasicByteSet.this.set = BasicByteSet.this.set.remove(this.lastReturned);
+        this.lastReturned = -1;
       }
     };
 
@@ -192,5 +185,10 @@ final class BasicByteSet extends AbstractByteSet {
     final byte last = (byte) (31 - Integer.numberOfLeadingZeros(this.set.value));
     this.set = this.set.remove(last);
     return last;
+  }
+  
+  @Override
+  public Spliterator<Byte> spliterator() {
+    return this.set.spliterator();
   }
 }

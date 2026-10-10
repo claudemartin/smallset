@@ -129,7 +129,7 @@ public value class OptionalByte implements Serializable {
     }
 
     if (obj instanceof final OptionalByte other) {
-      return (this.isPresent && other.isPresent) ? this.value == other.value : this.isPresent == other.isPresent;
+      return this.isPresent ? other.isPresent && this.value == other.value : !other.isPresent;
     }
 
     return false;
@@ -145,6 +145,10 @@ public value class OptionalByte implements Serializable {
     return this.isPresent ? String.format("OptionalByte[%s]", this.value) : "OptionalByte.empty";
   }
 
+  public OptionalInt toOptionalInt() {
+    return this.isEmpty() ? OptionalInt.empty() : OptionalInt.of(this.value);
+  }
+  
   public <U> Optional<U> mapToObj(final Function<Byte, ? extends U> mapper) {
     if (!this.isPresent) {
       return Optional.empty();

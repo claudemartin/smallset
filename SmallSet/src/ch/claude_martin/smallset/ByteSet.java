@@ -6,14 +6,15 @@ import java.util.NavigableSet;
 /// This implements {@link NavigableSet}. This implementation is not thread-safe. This data structure can contains the
 /// values 0 (inclusive) to 31 (exclusive).
 /// 
-/// {@snippet file = "Snippets.java" region = "classSmallSet"}
+/// {@snippet file = "Snippets.java" region = "classBasicByteSet"}
 /// 
 /// @see SmallSet#toSet()
 /// 
 /// @author Claude Martin
 public interface ByteSet extends NavigableSet<Byte>, Cloneable {
 
-  /// Removes the given byte value.
+  /// Removes the given byte value. This does nothing and returns false if the given value is below 0 or greater
+  /// than 31.
   public boolean remove(byte element);
 
   /// {@inheritDoc}
