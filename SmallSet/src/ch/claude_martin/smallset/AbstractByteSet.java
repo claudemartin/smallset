@@ -141,7 +141,12 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
     return false;
   }
 
-  abstract Range range();
+  @Override
+  public SmallSet range() {
+    return this.internalRange().toSmallSet();
+  }
+  
+  abstract Range internalRange();
 
   @Override
   public abstract Byte first() throws NoSuchElementException;
@@ -348,7 +353,7 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
 
   @Override
   public ByteSet headSet(final Byte toElement, final boolean inclusive) {
-    final Range range = this.range();
+    final Range range = this.internalRange();
     if (range.isEmpty()) {
       throw new IllegalArgumentException("toElement out of range");
     }
@@ -362,7 +367,7 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
 
   @Override
   public ByteSet tailSet(final Byte fromElement, final boolean inclusive) {
-    final Range range = this.range();
+    final Range range = this.internalRange();
     if (range.isEmpty()) {
       throw new IllegalArgumentException("fromElement out of range");
     }

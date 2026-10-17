@@ -37,9 +37,9 @@ import java.util.stream.StreamSupport;
 /// Example:
 /// {@snippet file = "Snippets.java" region = "classSmallSet"}
 ///
-/// Sets can be compared but this is done on the bit field (int) and is only useful when used in a data structure based
-/// on sorting, such as a tree.
-///
+/// This implements {@link java.lang.Comparable}, but the is done on the int value of this type.
+/// {@link java.util.Set} is not implemented by this type. See {@link #toSet()} to get a mutable set based on this value. 
+/// 
 /// @author Claude Martin
 ///
 public value class SmallSet implements Iterable<Byte>, Comparable<SmallSet>, Serializable {

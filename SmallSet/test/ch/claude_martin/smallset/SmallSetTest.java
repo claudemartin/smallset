@@ -385,6 +385,47 @@ public class SmallSetTest {
   }
 
   @Test
+  public void testOfRange2() throws Exception {
+    final SmallSet set = of(5, 6, 7);
+    final SmallSet range0 = ofRange(5, true, 7, true);
+    final SmallSet range1 = ofRange(4, false, 7, true);
+    final SmallSet range2 = ofRange(4, false, 8, false);
+    final SmallSet range3 = ofRange(5, true, 8, false);
+    assertEquals(set, range0);
+    assertEquals(set, range1);
+    assertEquals(set, range2);
+    assertEquals(set, range3);
+
+    assertEquals(empty().complement(), ofRange(0,true, 31, true));
+    assertEquals(empty().complement(), ofRange(-1,false, 31, true));
+    assertEquals(empty().complement(), ofRange(-1,false, 32, false));
+    assertEquals(empty().complement(), ofRange(0,true, 32, false));
+
+    TreeSet<Byte> tree = new TreeSet<>();
+    for (byte a = 0; a < 32; a++)
+      for (byte z = a; z < 32; z++) {
+        tree.clear();
+        tree.addAll(empty().complement().toSet());
+        assertEquals(tree.subSet(a, true, z, true), ofRange(a, true, z, true).toSet());
+        assertEquals(tree.subSet(a, false, z, true), ofRange(a, false, z, true).toSet());
+        assertEquals(tree.subSet(a, false, z, false), ofRange(a, false, z, false).toSet());
+        assertEquals(tree.subSet(a, true, z, false), ofRange(a, true, z, false).toSet());
+      }
+
+    for (int i = 0; i < 32; i++) {
+      assertEquals(of(i), ofRange(i, true, i, true));
+      assertEquals(empty(), ofRange(i, false, i, true));
+      assertEquals(empty(), ofRange(i, false, i, false));
+      assertEquals(empty(), ofRange(i, true, i, false));
+    }
+
+    assertThrows(IllegalArgumentException.class, () -> ofRange(5, true, 2, false), "ofRangeClosed(5, true, 2, true)");
+    assertThrows(IllegalArgumentException.class, () -> ofRange(-1, true, 2, false), "ofRangeClosed(-1, true, 2, false)");
+    assertThrows(IllegalArgumentException.class, () -> ofRange(5, true, 33, false), "ofRangeClosed(5, true, 33, false)");
+  }
+
+  
+  @Test
   public final void testToString() {
     assertEquals("()", empty().toString());
     assertEquals("(5)", of(5).toString());

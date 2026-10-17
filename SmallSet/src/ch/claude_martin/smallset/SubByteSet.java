@@ -19,7 +19,7 @@ final class SubByteSet extends AbstractByteSet {
   static ByteSet of(final ByteSet original, final Range range) {
     Objects.requireNonNull(original);
     Objects.requireNonNull(range);
-    final Range originalRange = ((AbstractByteSet) original).range();
+    final Range originalRange = ((AbstractByteSet) original).internalRange();
     if (!originalRange.containsAll(range)) {
       throw new IllegalArgumentException("The given range lies outside the bounds of the existing range");
     }
@@ -35,7 +35,7 @@ final class SubByteSet extends AbstractByteSet {
   }
 
   @Override
-  public Range range() {
+  public Range internalRange() {
     return this.range;
   }
 

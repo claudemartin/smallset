@@ -178,7 +178,7 @@ final class BasicByteSet extends AbstractByteSet {
   }
 
   @Override
-  public Range range() {
+  public Range internalRange() {
     return BasicByteSet.RANGE;
   }
 

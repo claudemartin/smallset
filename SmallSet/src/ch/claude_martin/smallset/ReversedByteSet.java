@@ -44,8 +44,8 @@ final class ReversedByteSet extends AbstractByteSet {
   }
 
   @Override
-  public Range range() {
-    return ((AbstractByteSet) this.original).range().reverse();
+  public Range internalRange() {
+    return ((AbstractByteSet) this.original).internalRange().reverse();
   }
 
   @Override

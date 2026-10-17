@@ -498,12 +498,12 @@ class ByteSetTest {
       sb.setLength(0);
       // sb.append(actual.toSmallSet().toString(",", "\nvar set = SmallSet.of(", ").toSet();\n"));
 
-      NavigableSet<Byte> a = actual;
+      ByteSet a = actual;
       NavigableSet<Byte> e = expected;
 
       while (step.getAndIncrement() < 200) {
         try {
-          final var range = ((AbstractByteSet) a).range().toSmallSet();
+          final var range = a.range();
           boolean aFailed = false, eFailed = false;
           switch (random.nextInt(14)) {
             case 0 -> {

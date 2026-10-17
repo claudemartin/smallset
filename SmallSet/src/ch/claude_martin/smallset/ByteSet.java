@@ -40,6 +40,10 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable {
   @Override
   public boolean contains(Object o);
 
+  /// The allowed range if this set. Only elements of this range can be added to this set. Note that the returned
+  /// {@link SmallSet} is always in natural order, while this set might be reversed.
+  public SmallSet range();
+
   public OptionalByte firstAsOptionalByte();
 
   public OptionalByte lastAsOptionalByte();
