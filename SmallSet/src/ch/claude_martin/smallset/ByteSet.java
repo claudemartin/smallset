@@ -1,5 +1,6 @@
 package ch.claude_martin.smallset;
 
+import java.io.Serializable;
 import java.util.NavigableSet;
 
 /// A mutable, navigable view of a {@link SmallSet}. Basic operations are done with the given {@link SmallSet} value.
@@ -12,7 +13,7 @@ import java.util.NavigableSet;
 ///
 /// @author Claude Martin
 ///
-public interface ByteSet extends NavigableSet<Byte>, Cloneable {
+public interface ByteSet extends NavigableSet<Byte>, Cloneable, Serializable {
 
   /// Removes the given byte value. This does nothing and returns false if the given value is out of range.
   public boolean remove(byte element);

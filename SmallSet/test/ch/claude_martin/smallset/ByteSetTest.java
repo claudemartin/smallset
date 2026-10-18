@@ -1,5 +1,9 @@
 package ch.claude_martin.smallset;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableSet;
@@ -476,12 +480,12 @@ class ByteSetTest {
   @Test
   void testNavigableSet2() {
     final var random = new java.util.Random(0x5EED);
-    final StringBuilder sb = new StringBuilder();
     final AtomicInteger trial = new AtomicInteger(0);
     final AtomicInteger step = new AtomicInteger(0);
     final Supplier<String> getMessage = () -> {
-      sb.append("/* trial: ").append(trial.get()).append(" */\n");
-      sb.append("/* step: ").append(step.get()).append(" */\n");
+      final StringBuilder sb = new StringBuilder();
+      sb.append("trial=").append(trial.get()).append(", ");
+      sb.append("step=").append(step.get());
       return sb.toString();
     };
     while (trial.getAndIncrement() < 1000) {
@@ -495,9 +499,6 @@ class ByteSetTest {
       final var expected = new java.util.TreeSet<Byte>();
       expected.addAll(actual);
 
-      sb.setLength(0);
-      // sb.append(actual.toSmallSet().toString(",", "\nvar set = SmallSet.of(", ").toSet();\n"));
-
       ByteSet a = actual;
       NavigableSet<Byte> e = expected;
 
@@ -507,7 +508,6 @@ class ByteSetTest {
           boolean aFailed = false, eFailed = false;
           switch (random.nextInt(14)) {
             case 0 -> {
-              // sb.append("set = set.reversed();\n");
               try {
                 a = a.reversed();
               } catch (IllegalArgumentException ex) {
@@ -526,11 +526,6 @@ class ByteSetTest {
                   : a.comparator().compare(x, y) <= 0) {
                 boolean xi = random.nextBoolean();
                 boolean yi = random.nextBoolean();
-                // sb.append("set = set.subSet((byte)")
-                // .append(x).append(",")
-                // .append(xi).append(",(byte)")
-                // .append(y).append(",")
-                // .append(yi).append(");\n");
                 try {
                   a = a.subSet(x, xi, y, yi);
                 } catch (IllegalArgumentException ex) {
@@ -547,9 +542,6 @@ class ByteSetTest {
               if (range.size() > 3) {
                 byte x = range.random(random);
                 boolean inclusive = random.nextBoolean();
-                // sb.append("set = set.headSet((byte)")
-                // .append(x).append(",")
-                // .append(inclusive).append(");\n");
                 try {
                   a = a.headSet(x, inclusive);
                 } catch (IllegalArgumentException ex) {
@@ -566,9 +558,6 @@ class ByteSetTest {
               if (range.size() > 3) {
                 byte x = range.random(random);
                 boolean inclusive = random.nextBoolean();
-                // sb.append("set = set.tailSet((byte)")
-                // .append(x).append(",")
-                // .append(inclusive).append(");\n");
                 try {
                   a = a.tailSet(x, inclusive);
                 } catch (IllegalArgumentException ex) {
@@ -584,7 +573,6 @@ class ByteSetTest {
             case 4 -> {
               if (!range.isEmpty()) {
                 byte x = range.random(random);
-                // sb.append("set.add((byte)").append(x).append(");\n");
                 assertEquals(e.add(x), a.add(x), getMessage);
               }
             }
@@ -592,13 +580,11 @@ class ByteSetTest {
               if (range.size() >= 2) {
                 byte x = range.random(random);
                 byte y = range.remove(x).random(random);
-                // sb.append("set.addAll(Set.of((byte)").append(x).append(",(byte)").append(y).append("));\n");
                 assertEquals(e.addAll(Set.of(x, y)), a.addAll(Set.of(x, y)), getMessage);
               }
             }
             case 6 -> {
               byte x = this.U.random(random);
-              // sb.append("set.add((byte)").append(x).append(");\n");
               boolean ra = false, re = false;
               try {
                 ra = a.add(x);
@@ -614,37 +600,28 @@ class ByteSetTest {
             }
             case 7 -> {
               byte x = (byte) random.nextInt(32);
-              // sb.append("set.remove((byte)").append(x).append(");\n");
               assertEquals(e.remove(x), a.remove(x), getMessage);
             }
             case 8 -> {
-              // sb.append("set.pollFirst();\n");
               assertEquals(e.pollFirst(), a.pollFirst(), getMessage);
             }
             case 9 -> {
-              sb.append("set.pollLast();\n");
               assertEquals(e.pollLast(), a.pollLast(), getMessage);
             }
             case 10 -> {
               byte x = (byte) random.nextInt(32);
-              // sb.append("set.lower((byte)").append(x).append(");\n");
-              // sb.append("set.floor((byte)").append(x).append(");\n");
               assertEquals(e.lower(x), a.lower(x), getMessage);
               assertEquals(e.floor(x), a.floor(x), getMessage);
             }
             case 11 -> {
               byte x = (byte) random.nextInt(32);
-              // sb.append("set.ceiling((byte)").append(x).append(");\n");
-              // sb.append("set.higher((byte)").append(x).append(");\n");
               assertEquals(e.ceiling(x), a.ceiling(x), getMessage);
               assertEquals(e.higher(x), a.higher(x), getMessage);
             }
             case 12 -> {
-              // sb.append("set.first();\n");
               assertEquals(e.first(), a.first(), getMessage);
             }
             case 13 -> {
-              // sb.append("set.last();\n");
               assertEquals(e.last(), a.last(), getMessage);
             }
           }
@@ -659,23 +636,47 @@ class ByteSetTest {
           }
         }
 
-        try {
-          assertEquals(new java.util.ArrayList<>(e),
-              new java.util.ArrayList<>(a),
-              getMessage);
-          assertEquals(e.size(), a.size(), getMessage);
-          assertEquals(e.isEmpty(), a.isEmpty(), getMessage);
-        } catch (IllegalArgumentException ex) {
-          try {
-            fail(getMessage);
-          } catch (AssertionError ae) {
-            ae.addSuppressed(ex);
-            throw ae;
-          }
-        }
-
+        assertEquals(new java.util.ArrayList<>(e),
+            new java.util.ArrayList<>(a),
+            getMessage);
+        assertEquals(e.size(), a.size(), getMessage);
+        assertEquals(e.isEmpty(), a.isEmpty(), getMessage);
       }
     }
   }
 
+  @Test
+  public void testSerializable() throws Exception {
+    try (final var bos = new ByteArrayOutputStream(); final var out = new ObjectOutputStream(bos)) {
+      out.writeObject(empty().toSet());
+      var original = of(7, 12, 31).toSet().reversed().headSet((byte) 9).reversed().subSet((byte) 10, (byte) 21);
+      assertEquals(Set.of((byte) 12), original);
+      out.writeObject(original);
+      try (final var bis = new ByteArrayInputStream(bos.toByteArray()); final var in = new ObjectInputStream(bis)) {
+        assertEquals((ByteSet) in.readObject(), empty().toSet());
+        var copy = (ByteSet) in.readObject();
+        assertEquals(original, copy);
+
+        final var originalFieldOnSubSet = SubByteSet.class.getDeclaredField("original");
+        originalFieldOnSubSet.setAccessible(true);
+        final var originalFieldOnReversedSet = ReversedByteSet.class.getDeclaredField("original");
+        originalFieldOnReversedSet.setAccessible(true);
+
+        do {
+          final var field = switch (original) {
+            case SubByteSet _ -> originalFieldOnSubSet;
+            case ReversedByteSet _ -> originalFieldOnReversedSet;
+            default -> null;
+          };
+          if (field == null)
+            break;
+          original = (ByteSet) field.get(original);
+          copy = (ByteSet) field.get(copy);
+
+          assertEquals(original, copy);
+          assertEquals(original.range(), copy.range());
+        } while (true);
+      }
+    }
+  }
 }

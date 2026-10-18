@@ -1,5 +1,6 @@
 package ch.claude_martin.smallset;
 
+import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Comparator;
@@ -11,8 +12,10 @@ import java.util.Spliterators;
 
 abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implements ByteSet
     permits BasicByteSet, SubByteSet, ReversedByteSet {
+  private static final long serialVersionUID = 1L;
 
-  static value record Range(byte low, boolean lowInclusive, byte high, boolean highInclusive) {
+  static value record Range(byte low, boolean lowInclusive, byte high, boolean highInclusive) implements Serializable{
+    private static final long serialVersionUID = 1L;
 
     public Range(final Byte low, final Byte high) {
       this(low, true, high, false);
