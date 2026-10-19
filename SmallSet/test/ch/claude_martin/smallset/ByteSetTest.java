@@ -5,14 +5,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
+
+import ch.claude_martin.smallset.AbstractByteSet.Range;
+
 import org.junit.jupiter.api.BeforeAll;
 
 import static ch.claude_martin.smallset.SmallSet.collect;
@@ -25,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("unlikely-arg-type")
 class ByteSetTest {
-  final static byte FIVE = 5;
-  final static byte OOR  = 42;
+  final static byte     FIVE = 5;
+  final static byte     OOR  = 42;
   // "U" for "universal set" because it's equal to the domain.
-  final static SmallSet    U    = SmallSet.empty().complement();
+  final static SmallSet U    = SmallSet.empty().complement();
 
   @BeforeAll
   public static void before() {
@@ -42,7 +47,6 @@ class ByteSetTest {
     });
   }
 
-  
   @Test
   void testAdd() {
     {
@@ -358,6 +362,128 @@ class ByteSetTest {
   }
 
   @Test
+  void testRange() {
+    for (boolean a : Set.of(true, false)) {
+      for (boolean b : Set.of(true, false)) {
+        Range range = new Range(FIVE, a, FIVE, b);
+        assertEquals(a && b, range.inRange(FIVE), range + ".inRange(FIVE)");
+        assertEquals(a == b, range.inRange(range), range + ".inRange(" + range + ")");
+        assertEquals(a && b, range.inRange(new Range(FIVE, true, FIVE, true)),
+            range + ".inRange(new Range(FIVE, true, FIVE, true))");
+      }
+    }
+
+    {
+      Range range = new Range(FIVE, false, (byte) 21, false);
+      assertFalse(range.inRange(FIVE), range + ".inRange(FIVE)");
+      for (byte i = 6; i < 21; i++) {
+        assertTrue(range.inRange(i), range + ".inRange(" + i + ")");
+      }
+      assertFalse(range.reverse().inRange(FIVE), range.reverse() + ".inRange(FIVE)");
+    }
+    {
+      Range range = new Range(FIVE, false, FIVE, true);
+      for (byte i = 0; i < 32; i++) {
+        assertFalse(range.inRange(i), range + ".inRange(" + i + ")");
+      }
+      assertFalse(range.inRange(range.reverse()), range + ".inRange(" + range.reverse() + ")");
+      assertFalse(range.reverse().inRange(range), range.reverse() + ".inRange(" + range + ")");
+    }
+    {
+      Range range = new Range(FIVE, false, (byte) 6, false);
+      for (byte i = 0; i < 32; i++) {
+        assertFalse(range.inRange(i), range + ".inRange(" + i + ")");
+      }
+      assertTrue(range.inRange(range), range + ".inRange(" + range + ")");
+      assertTrue(range.inRange(range.reverse()), range + ".inRange(" + range.reverse() + ")");
+      assertTrue(range.reverse().inRange(range), range.reverse() + ".inRange(" + range + ")");
+    }
+  }
+
+  @Test
+  void testSubSet() {
+    {
+      ByteSet set = empty().toSet().subSet((byte) 5, false, (byte) 7, false).reversed();
+      assertThrows(IllegalArgumentException.class, () -> set.subSet((byte) 5, false, (byte) 5, true));
+    }
+    // see below for a randomised version with more operations.
+    for (byte first : Set.of((byte) 0, (byte) 7, (byte) 13)) {
+      for (byte last : Set.of((byte) 13, (byte) 17, (byte) 31)) {
+        for (boolean fullRange : Set.of(true, false)) {
+          final NavigableSet<Byte> set = (fullRange ? SmallSet.ofRangeClosed(first, last) : SmallSet.of(first, last))
+              .toSet();
+          final NavigableSet<Byte> reference = new TreeSet<>();
+          reference.addAll(set);
+
+          for (boolean reversed : Set.of(true, false)) {
+            for (byte fromElement : Set.of((byte) 5, (byte) 6, (byte) 12)) {
+              for (boolean fromInclusive : Set.of(true, false)) {
+                for (byte toElement : Set.of((byte) 5, (byte) 6, (byte) 16)) {
+                  for (boolean toInclusive : Set.of(true, false)) {
+                    Object result;
+                    try {
+                      result = (reversed ? set.reversed() : set)
+                          .subSet(fromElement, fromInclusive, toElement, toInclusive);
+                    } catch (Throwable t) {
+                      result = t;
+                    }
+
+                    Object resultReference;
+                    try {
+                      resultReference = (reversed ? reference.reversed() : reference)
+                          .subSet(fromElement, fromInclusive, toElement, toInclusive);
+                    } catch (Throwable t) {
+                      resultReference = t;
+                    }
+
+                    try {
+                      if (resultReference instanceof Throwable) {
+                        // The messages are different.
+                        assertEquals(resultReference.getClass(), result.getClass(),
+                            "Creating sub sets didn't throw the same type of exception.");
+                      } else {
+                        assertEquals(resultReference, result, "Creating sub sets didn't return an equal result.");
+
+                        Object result2;
+                        try {
+                          result2 = ((Set<Byte>) result).add((byte) 14);
+                        } catch (Throwable t) {
+                          result2 = t;
+                        }
+
+                        Object resultReference2;
+                        try {
+                          resultReference2 = ((Set<Byte>) resultReference).add((byte) 14);
+                        } catch (Throwable t) {
+                          resultReference2 = t;
+                        }
+
+                        if (resultReference2 instanceof Throwable) {
+                          // The messages are different.
+                          assertEquals(resultReference2.getClass(), result2.getClass(),
+                              "Adding 14 didn't throw the same type of exception.");
+                        } else {
+                          assertEquals(resultReference2, result2, "Adding 14 didn't work the same on both.");
+                          assertEquals(resultReference, result, "Adding 14 didn't result in the same sets.");
+                        }
+                      }
+                    } catch (AssertionError e) {
+                      e.addSuppressed(new RuntimeException("(5, 7, 21)" + (reversed ? ".reversed()" : "")
+                          + ".subSet(" + fromElement + ", " + fromInclusive + ", " + toElement + ", " + toInclusive
+                          + ") = " + resultReference));
+                      throw e;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Test
   void testNavigableSet0() {
     {
       var original = this.U.toSet();
@@ -480,15 +606,7 @@ class ByteSetTest {
   @Test
   void testNavigableSet2() {
     final var random = new java.util.Random(0x5EED);
-    final AtomicInteger trial = new AtomicInteger(0);
-    final AtomicInteger step = new AtomicInteger(0);
-    final Supplier<String> getMessage = () -> {
-      final StringBuilder sb = new StringBuilder();
-      sb.append("trial=").append(trial.get()).append(", ");
-      sb.append("step=").append(step.get());
-      return sb.toString();
-    };
-    while (trial.getAndIncrement() < 1000) {
+    for (int trial = 0; trial < 1000; trial++) {
       var set = SmallSet.empty();
       for (byte b = 0; b < 32; b++) {
         if (random.nextBoolean()) {
@@ -502,145 +620,149 @@ class ByteSetTest {
       ByteSet a = actual;
       NavigableSet<Byte> e = expected;
 
-      while (step.getAndIncrement() < 200) {
+      for (int step = 0; step < 200; step++) {
         try {
-          final var range = a.range();
-          boolean aFailed = false, eFailed = false;
-          switch (random.nextInt(14)) {
-            case 0 -> {
-              try {
-                a = a.reversed();
-              } catch (IllegalArgumentException ex) {
-                aFailed = true;
-              }
-              try {
-                e = e.reversed();
-              } catch (IllegalArgumentException ex) {
-                eFailed = true;
-              }
-            }
-            case 1 -> {
-              byte x = (byte) random.nextInt(32);
-              byte y = (byte) random.nextInt(32);
-              if (a.comparator() == null ? x <= y
-                  : a.comparator().compare(x, y) <= 0) {
-                boolean xi = random.nextBoolean();
-                boolean yi = random.nextBoolean();
-                try {
-                  a = a.subSet(x, xi, y, yi);
-                } catch (IllegalArgumentException ex) {
-                  aFailed = true;
-                }
-                try {
-                  e = e.subSet(x, xi, y, yi);
-                } catch (IllegalArgumentException ex) {
-                  eFailed = true;
-                }
-              }
-            }
-            case 2 -> {
-              if (range.size() > 3) {
-                byte x = range.random(random);
-                boolean inclusive = random.nextBoolean();
-                try {
-                  a = a.headSet(x, inclusive);
-                } catch (IllegalArgumentException ex) {
-                  aFailed = true;
-                }
-                try {
-                  e = e.headSet(x, inclusive);
-                } catch (IllegalArgumentException ex) {
-                  eFailed = true;
-                }
-              }
-            }
-            case 3 -> {
-              if (range.size() > 3) {
-                byte x = range.random(random);
-                boolean inclusive = random.nextBoolean();
-                try {
-                  a = a.tailSet(x, inclusive);
-                } catch (IllegalArgumentException ex) {
-                  aFailed = true;
-                }
-                try {
-                  e = e.tailSet(x, inclusive);
-                } catch (IllegalArgumentException ex) {
-                  eFailed = true;
-                }
-              }
-            }
-            case 4 -> {
-              if (!range.isEmpty()) {
-                byte x = range.random(random);
-                assertEquals(e.add(x), a.add(x), getMessage);
-              }
-            }
-            case 5 -> {
-              if (range.size() >= 2) {
-                byte x = range.random(random);
-                byte y = range.remove(x).random(random);
-                assertEquals(e.addAll(Set.of(x, y)), a.addAll(Set.of(x, y)), getMessage);
-              }
-            }
-            case 6 -> {
-              byte x = this.U.random(random);
-              boolean ra = false, re = false;
-              try {
-                ra = a.add(x);
-              } catch (IllegalArgumentException ex) {
-                aFailed = true;
-              }
-              try {
-                re = e.add(x);
-              } catch (IllegalArgumentException ex) {
-                eFailed = true;
-              }
-              assertEquals(ra, re, getMessage);
-            }
-            case 7 -> {
-              byte x = (byte) random.nextInt(32);
-              assertEquals(e.remove(x), a.remove(x), getMessage);
-            }
-            case 8 -> {
-              assertEquals(e.pollFirst(), a.pollFirst(), getMessage);
-            }
-            case 9 -> {
-              assertEquals(e.pollLast(), a.pollLast(), getMessage);
-            }
-            case 10 -> {
-              byte x = (byte) random.nextInt(32);
-              assertEquals(e.lower(x), a.lower(x), getMessage);
-              assertEquals(e.floor(x), a.floor(x), getMessage);
-            }
-            case 11 -> {
-              byte x = (byte) random.nextInt(32);
-              assertEquals(e.ceiling(x), a.ceiling(x), getMessage);
-              assertEquals(e.higher(x), a.higher(x), getMessage);
-            }
-            case 12 -> {
-              assertEquals(e.first(), a.first(), getMessage);
-            }
-            case 13 -> {
-              assertEquals(e.last(), a.last(), getMessage);
-            }
-          }
-          assertEquals(aFailed, eFailed, () -> "operation failed for only one set.\n" + getMessage.get());
-        } catch (java.util.NoSuchElementException ex) {
           try {
-            assertTrue(e.isEmpty(), getMessage);
-            assertTrue(a.isEmpty(), getMessage);
-          } catch (AssertionError ae) {
-            ae.addSuppressed(ex);
-            throw ae;
+            final var range = a.range();
+            boolean aFailed = false, eFailed = false;
+            switch (random.nextInt(14)) {
+              case 0 -> {
+                try {
+                  a = a.reversed();
+                } catch (IllegalArgumentException ex) {
+                  aFailed = true;
+                }
+                try {
+                  e = e.reversed();
+                } catch (IllegalArgumentException ex) {
+                  eFailed = true;
+                }
+              }
+              case 1 -> {
+                byte x = (byte) random.nextInt(32);
+                byte y = (byte) random.nextInt(32);
+                if (a.comparator() == null ? x <= y
+                    : a.comparator().compare(x, y) <= 0) {
+                  boolean xi = random.nextBoolean();
+                  boolean yi = random.nextBoolean();
+                  try {
+                    a = a.subSet(x, xi, y, yi);
+                  } catch (IllegalArgumentException ex) {
+                    aFailed = true;
+                  }
+                  try {
+                    e = e.subSet(x, xi, y, yi);
+                  } catch (IllegalArgumentException ex) {
+                    eFailed = true;
+                  }
+                }
+              }
+              case 2 -> {
+                if (range.size() > 3) {
+                  byte x = range.random(random);
+                  boolean inclusive = random.nextBoolean();
+                  try {
+                    a = a.headSet(x, inclusive);
+                  } catch (IllegalArgumentException ex) {
+                    aFailed = true;
+                  }
+                  try {
+                    e = e.headSet(x, inclusive);
+                  } catch (IllegalArgumentException ex) {
+                    eFailed = true;
+                  }
+                }
+              }
+              case 3 -> {
+                if (range.size() > 3) {
+                  byte x = range.random(random);
+                  boolean inclusive = random.nextBoolean();
+                  try {
+                    a = a.tailSet(x, inclusive);
+                  } catch (IllegalArgumentException ex) {
+                    aFailed = true;
+                  }
+                  try {
+                    e = e.tailSet(x, inclusive);
+                  } catch (IllegalArgumentException ex) {
+                    eFailed = true;
+                  }
+                }
+              }
+              case 4 -> {
+                if (!range.isEmpty()) {
+                  byte x = range.random(random);
+                  assertEquals(e.add(x), a.add(x));
+                }
+              }
+              case 5 -> {
+                if (range.size() >= 2) {
+                  byte x = range.random(random);
+                  byte y = range.remove(x).random(random);
+                  assertEquals(e.addAll(Set.of(x, y)), a.addAll(Set.of(x, y)));
+                }
+              }
+              case 6 -> {
+                byte x = this.U.random(random);
+                boolean ra = false, re = false;
+                try {
+                  ra = a.add(x);
+                } catch (IllegalArgumentException ex) {
+                  aFailed = true;
+                }
+                try {
+                  re = e.add(x);
+                } catch (IllegalArgumentException ex) {
+                  eFailed = true;
+                }
+                assertEquals(ra, re);
+              }
+              case 7 -> {
+                byte x = (byte) random.nextInt(32);
+                assertEquals(e.remove(x), a.remove(x));
+              }
+              case 8 -> {
+                assertEquals(e.pollFirst(), a.pollFirst());
+              }
+              case 9 -> {
+                assertEquals(e.pollLast(), a.pollLast());
+              }
+              case 10 -> {
+                byte x = (byte) random.nextInt(32);
+                assertEquals(e.lower(x), a.lower(x));
+                assertEquals(e.floor(x), a.floor(x));
+              }
+              case 11 -> {
+                byte x = (byte) random.nextInt(32);
+                assertEquals(e.ceiling(x), a.ceiling(x));
+                assertEquals(e.higher(x), a.higher(x));
+              }
+              case 12 -> {
+                assertEquals(e.first(), a.first());
+              }
+              case 13 -> {
+                assertEquals(e.last(), a.last());
+              }
+            }
+            assertEquals(aFailed, eFailed, () -> "operation failed for only one set.");
+          } catch (java.util.NoSuchElementException ex) {
+            try {
+              assertTrue(e.isEmpty());
+              assertTrue(a.isEmpty());
+            } catch (AssertionError ae) {
+              ae.addSuppressed(ex);
+              throw ae;
+            }
           }
-        }
 
-        assertEquals(new java.util.ArrayList<>(e),
-            new java.util.ArrayList<>(a),
-            getMessage);
-        assertEquals(e.size(), a.size(), getMessage);
-        assertEquals(e.isEmpty(), a.isEmpty(), getMessage);
+          assertEquals(new java.util.ArrayList<>(e),
+              new java.util.ArrayList<>(a));
+          assertEquals(e.size(), a.size());
+          assertEquals(e.isEmpty(), a.isEmpty());
+        } catch (AssertionError ex) {
+          ex.addSuppressed(new RuntimeException("trial=" + trial + ", step=" + step));
+          throw ex;
+        }
       }
     }
   }

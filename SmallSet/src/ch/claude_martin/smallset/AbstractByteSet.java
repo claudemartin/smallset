@@ -14,7 +14,7 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
     permits BasicByteSet, SubByteSet, ReversedByteSet {
   private static final long serialVersionUID = 1L;
 
-  static value record Range(byte low, boolean lowInclusive, byte high, boolean highInclusive) implements Serializable{
+  static value record Range(byte low, boolean lowInclusive, byte high, boolean highInclusive) implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public Range(final Byte low, final Byte high) {
@@ -46,9 +46,9 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
       return (this.low <= this.high) ? this.lowInclusive : this.highInclusive;
     }
 
-    boolean containsAll(final Range range) {
+    boolean inRange(final Range range) {
       if (this.low == this.high && (!this.lowInclusive || !this.highInclusive)) {
-        return false;
+        return range.high == this.low && range.low == this.low && !range.lowInclusive && ! range.highInclusive;
       }
       final byte low = this.natLow();
       final byte rangeLow = range.natLow();
@@ -57,10 +57,15 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
           || low == rangeLow && range.natLowInclusive() && !this.natLowInclusive()) {
         return false;
       }
-
+      
       final byte high = this.natHigh();
       final byte rangeHigh = range.natHigh();
 
+      if (rangeLow == rangeHigh && (range.lowInclusive || range.highInclusive) &&
+          (low == rangeLow && !this.natLowInclusive()
+              || high == rangeHigh && !this.natHighInclusive()))
+        return false;
+      
       return high > rangeHigh
           || high == rangeHigh && (!range.natHighInclusive() || this.natHighInclusive());
     }
@@ -83,15 +88,6 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
 
     boolean inRange(final byte key) {
       return !this.tooLow(key) && !this.tooHigh(key);
-    }
-
-    boolean inClosedRange(final byte key) {
-      return (Byte.compare(key, this.natLow()) >= 0)
-          && (Byte.compare(this.natHigh(), key) >= 0);
-    }
-
-    boolean inRange(final byte key, final boolean inclusive) {
-      return inclusive ? this.inRange(key) : this.inClosedRange(key);
     }
 
     Range reverse() {
@@ -148,7 +144,7 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
   public SmallSet range() {
     return this.internalRange().toSmallSet();
   }
-  
+
   abstract Range internalRange();
 
   @Override
@@ -344,8 +340,11 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
   @Override
   public ByteSet subSet(final Byte fromElement, final boolean fromInclusive, final Byte toElement,
       final boolean toInclusive) {
+    var comparator = this.comparator();
+    if (comparator == NATURAL_ORDER ? fromElement > toElement : comparator.compare(fromElement, toElement) > 0) {
+      throw new IllegalArgumentException("fromElement > toElement");
+    }
     return SubByteSet.of(this, new Range(fromElement, fromInclusive, toElement, toInclusive));
-
   }
 
   @Override

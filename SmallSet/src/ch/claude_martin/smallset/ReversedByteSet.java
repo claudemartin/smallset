@@ -7,6 +7,7 @@ import java.util.Objects;
 /// Wraps some original ByteSet reversing it's order. Because it's possible that an already reversed set gets reversed
 /// again, this could result in a set with natural order.
 final class ReversedByteSet extends AbstractByteSet {
+  private static final long serialVersionUID = 1L;
   private final ByteSet original;
 
   private ReversedByteSet(final ByteSet original) {
@@ -16,7 +17,7 @@ final class ReversedByteSet extends AbstractByteSet {
 
   static ByteSet of(final ByteSet original) {
     Objects.requireNonNull(original);
-    if (original instanceof final ReversedByteSet reversed && original.comparator() == AbstractByteSet.REVERSED) {
+    if (original instanceof final ReversedByteSet reversed) {
       return reversed.original;
     }
     return new ReversedByteSet(original);
@@ -162,6 +163,6 @@ final class ReversedByteSet extends AbstractByteSet {
 
   @Override
   public String debug() {
-    return ((AbstractByteSet) this.original).debug() + " reversed() => " + this.toString();
+    return ((AbstractByteSet) this.original).debug() + "\n.reversed() // " + this.toString();
   }
 }

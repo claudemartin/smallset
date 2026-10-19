@@ -8,6 +8,7 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 final class BasicByteSet extends AbstractByteSet {
+  private static final long serialVersionUID = 1L;
   private static final Range RANGE = new Range((byte) 0, true, (byte) 32, false);
   private SmallSet           set;
 
@@ -301,6 +302,6 @@ final class BasicByteSet extends AbstractByteSet {
 
   @Override
   public String debug() {
-    return this.toString();
+    return "SmallSet.of(" + this.set.toString(",","","") + ").toSet()";
   }
 }

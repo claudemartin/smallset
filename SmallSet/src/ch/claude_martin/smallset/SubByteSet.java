@@ -6,6 +6,8 @@ import java.util.Objects;
 
 /// Wraps some original ByteSet applying a subrange.
 final class SubByteSet extends AbstractByteSet {
+  private static final long serialVersionUID = 1L;
+
   private final ByteSet original;
 
   private final Range   range;
@@ -20,7 +22,7 @@ final class SubByteSet extends AbstractByteSet {
     Objects.requireNonNull(original);
     Objects.requireNonNull(range);
     final Range originalRange = ((AbstractByteSet) original).internalRange();
-    if (!originalRange.containsAll(range)) {
+    if (!originalRange.inRange(range)) {
       throw new IllegalArgumentException("The given range lies outside the bounds of the existing range");
     }
     if (range.equals(originalRange)) {
@@ -176,6 +178,6 @@ final class SubByteSet extends AbstractByteSet {
 
   @Override
   public String debug() {
-    return ((AbstractByteSet) this.original).debug() + " subSet(" + this.range + ") => " + this.toString();
+    return ((AbstractByteSet) this.original).debug() + "\n.subSet((byte)" + this.range.low() +", "+  range.lowInclusive() +", (byte)" + this.range.low() +", "+  range.lowInclusive() + ") // " + this.toString();
   }
 }
