@@ -714,13 +714,25 @@ class Snippets {
     }
   }
 
-  void classBasicByteSet() {
-    // @start region = classBasicByteSet
-    SmallSet set = SmallSet.of(1, 5, 23); // @replace substring = '1, 2, 3' replacement = '...'
+  void interfaceByteSet() {
+    // @start region = interfaceByteSet
+    SmallSet set = SmallSet.of(1, 5, 23); // @replace substring = '1, 5, 23' replacement = '...'
     ByteSet mutableSet = set.toSet();
     mutableSet.add((byte) 7);
     set = mutableSet.toSmallSet();
-    // @end region = classBasicByteSet
+    // @end region = interfaceByteSet
+  }
+  
+  void range() {
+    // @start region = range
+    SmallSet set = SmallSet.ofRange(1, 32).filter(i -> i % 2 == 1);
+    ByteSet mutableSet = set.toSet().subSet((byte) 13, (byte) 16).reversed();
+    IO.println(mutableSet); // [15, 13]
+    SmallSet range = mutableSet.range();
+    IO.println(range); // (13, 14, 15)
+    // @end region = range
+    assertEquals(range, SmallSet.of(13, 14, 15));
+    assertEquals(mutableSet, SmallSet.of(13, 15).toSet());
   }
 
   /////////////////////////////////////////////////////////

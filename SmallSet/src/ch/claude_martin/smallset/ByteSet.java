@@ -7,7 +7,7 @@ import java.util.NavigableSet;
 /// This implements {@link NavigableSet}. This implementation is not thread-safe. This data structure can contains the
 /// values 0 (inclusive) to 31 (exclusive), but this set might be a subset with a smaller range.
 ///
-/// {@snippet file = "Snippets.java" region = "classBasicByteSet"}
+/// {@snippet file = "Snippets.java" region = "interfaceByteSet"}
 ///
 /// @see SmallSet#toSet()
 ///
@@ -44,6 +44,8 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable, Serializable {
 
   /// The allowed range if this set. Only elements of this range can be added to this set. Note that the returned
   /// {@link SmallSet} is always in natural order, while this set might be reversed.
+  /// 
+  /// {@snippet file = "Snippets.java" region = "range"}
   public SmallSet range();
 
   /// @see #first()
@@ -52,16 +54,16 @@ public interface ByteSet extends NavigableSet<Byte>, Cloneable, Serializable {
   /// @see #last()
   public OptionalByte lastAsOptionalByte();
 
-  /// @see #lower()
+  /// @see #lower(Object)
   public OptionalByte lowerAsOptionalByte(final Byte e);
 
-  /// @see #floor()
+  /// @see #floor(Object)
   public OptionalByte floorAsOptionalByte(final Byte e);
 
-  /// @see #ceiling()
+  /// @see #ceiling(Object)
   public OptionalByte ceilingAsOptionalByte(final Byte e);
 
-  /// @see #higher()
+  /// @see #higher(Object)
   public OptionalByte higherAsOptionalByte(final Byte e);
 
   /// @see #pollFirst()

@@ -78,7 +78,9 @@
 		<javadoc access="public" author="true" destdir="./doc" encoding="UTF-8" charset="UTF-8" nodeprecated="true" nodeprecatedlist="true" noindex="true" nonavbar="false" notree="true" source="${source}" 
 			  use="true" version="true" additionalparam="-Xdoclint:none"
 			  header="project home: &lt;a target=&quot;_blank&quot; style=&quot;text-transform:lowercase;&quot; href=&quot;https://github.com/claudemartin/smallset/&quot;&gt;https://github.com/claudemartin/smallset/&lt;/a&gt;">
-			<link href="https://docs.oracle.com/en/java/javase/${source}/docs/api/" />
+			<!-- TODO: Replace when Valhalla isofficially released in a stable JDK: --> 
+			<!-- <link href="https://docs.oracle.com/en/java/javase/${source}/docs/api/" /> -->
+			<link href="https://download.java.net/java/early_access/jdk28/docs/api/" />
 			<arg value="--enable-preview" />
 			<arg value="--snippet-path" />
 		    <arg value="../test/ch/claude_martin/smallset" />
