@@ -7,8 +7,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.stream.Collectors;
 
-// This is just a simple demo of what my code does. Some of this will change with the next preview of Valhalla.
-
+/// This is just a simple demo of what my code does. Some of this will change with the next preview of Valhalla.
+///
+/// You can run this  from the project root in a console like this:
+/// ```
+/// & "C:\Program Files\Java\jdk-28\bin\java.exe" --enable-preview -cp ".\build\ch.claude_martin.smallset.jar" .\test\ch\claude_martin\smallset\Demo.java
+/// ```
 public class Demo {
   public static void main(final String[] args) {
     IO.println("Here we create sets and use them like values.");
@@ -24,14 +28,14 @@ public class Demo {
     IO.println(set2.compareTo(set1));
 
     IO.println();
-    IO.println(new int[] { set1.value, set2.value }); // [I
+    IO.println(new int[] { set1.toInt(), set2.toInt() }); // [I
     IO.println(new SmallSet[] { set1, set2 }); // [L
     // IO.println(new SmallSet![] { set1, set2 }); // see
     // https://openjdk.org/jeps/8316779
     IO.println(new Object[] { set1, set2 }); // [L
     // Older versions used to have [Q for arrays of value types
     // See: '4.3. Descriptors' in the latest JLS.
-    // https://docs.oracle.com/javase/specs/jvms/se26/html/jvms-4.html#jvms-4.3
+    // https://docs.oracle.com/javase/specs/jvms/se27/html/jvms-4.html#jvms-4.3
 
     IO.println();
     IO.println("Filtered power set:");
@@ -41,9 +45,10 @@ public class Demo {
     IO.println();
     IO.println("You can still use it as a referenced object:");
 
-    final Object o = set1; // Now it's in the heap memory
-    Demo.printObject(o, set1, set2); // must be passed as a reference
-
+    final Object o = set1; // Now it's in the heap memory, but it still lacks identity
+    final Object returned =  Demo.printObject(o, set1, set2); // must be passed using a wrapper
+    IO.println(o == returned); // true
+    
     IO.println();
     IO.println(java.util.List.of(set1, set2));
     IO.println(java.util.Set.of(set1, set2));
@@ -65,7 +70,7 @@ public class Demo {
     Sudoku.demo();
   }
 
-  private static void printObject(final Object o, final Object set1, final Object set2) {
+  private static Object printObject(final Object o, final Object set1, final Object set2) {
     // This method must treat the set as an object (i.e. "o" is a reference)
     IO.println(o); // Uses custom toString implementation
     IO.println(o.hashCode()); // based on the 'value' field
@@ -79,5 +84,6 @@ public class Demo {
     IO.println(o == set2); // false
     IO.println(o == null); // false
     IO.println(o == o); // true
+    return o;
   }
 }
