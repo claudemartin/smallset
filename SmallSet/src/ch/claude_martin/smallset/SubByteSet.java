@@ -47,6 +47,12 @@ final class SubByteSet extends AbstractByteSet {
     }
     return false;
   }
+  
+
+  private boolean inRange(final byte b) {
+    return this.range.inRange(b);
+  }
+
 
   @Override
   public SmallSet toSmallSet() {
@@ -169,11 +175,6 @@ final class SubByteSet extends AbstractByteSet {
   @Override
   public ByteSet descendingSet() {
     return ReversedByteSet.of(this);
-  }
-
-  @Override
-  public ByteIterator descendingIterator() {
-    return this.descendingSet().iterator();
   }
 
   @Override

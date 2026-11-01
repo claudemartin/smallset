@@ -337,24 +337,17 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
         | Spliterator.DISTINCT | (this.isNaturalOrder() ? Spliterator.SORTED : 0));
   }
 
-  @Override
-  public ByteSet subSet(final Byte fromElement, final boolean fromInclusive, final Byte toElement,
-      final boolean toInclusive) {
+  public ByteSet subSet(final byte fromElement, final boolean fromInclusive, final byte toElement,
+        final boolean toInclusive) {
     var comparator = this.comparator();
     if (comparator == NATURAL_ORDER ? fromElement > toElement : comparator.compare(fromElement, toElement) > 0) {
       throw new IllegalArgumentException("fromElement > toElement");
     }
     return SubByteSet.of(this, new Range(fromElement, fromInclusive, toElement, toInclusive));
   }
-
+  
   @Override
-  public ByteSet subSet(final Byte fromElement, final Byte toElement) {
-    // In reversed order, fromElement must be greater than toElement.
-    return SubByteSet.of(this, new Range(fromElement, toElement));
-  }
-
-  @Override
-  public ByteSet headSet(final Byte toElement, final boolean inclusive) {
+  public ByteSet headSet(final byte toElement, final boolean inclusive) {
     final Range range = this.internalRange();
     if (range.isEmpty()) {
       throw new IllegalArgumentException("toElement out of range");
@@ -363,22 +356,12 @@ abstract sealed class AbstractByteSet extends AbstractCollection<Byte> implement
   }
 
   @Override
-  public ByteSet headSet(final Byte toElement) {
-    return this.headSet(toElement, false);
-  }
-
-  @Override
-  public ByteSet tailSet(final Byte fromElement, final boolean inclusive) {
+  public ByteSet tailSet(final byte fromElement, final boolean inclusive) {
     final Range range = this.internalRange();
     if (range.isEmpty()) {
       throw new IllegalArgumentException("fromElement out of range");
     }
     return this.subSet(fromElement, inclusive, range.high(), range.highInclusive());
-  }
-
-  @Override
-  public ByteSet tailSet(final Byte fromElement) {
-    return this.tailSet(fromElement, true);
   }
 
   @Override

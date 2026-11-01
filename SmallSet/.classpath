@@ -10,7 +10,7 @@
 	<classpathentry kind="lib" path="lib/junit-platform-console-standalone-1.14.4.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://javadoc.io/doc/org.junit.jupiter/junit-jupiter-api/5.14.4/index.html"/>
-			<attribute name="module" value="true"/>
+			<attribute name="test" value="true"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>

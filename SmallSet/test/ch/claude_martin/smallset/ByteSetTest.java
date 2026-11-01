@@ -277,13 +277,16 @@ class ByteSetTest {
 
   @Test
   void testClone() {
-    var set = SmallSet.singleton(ByteSetTest.FIVE).toSet();
+    var set = SmallSet.singleton(ByteSetTest.FIVE).toSet().reversed().subSet((byte) 27, (byte) 2);
     var clone = set.clone();
     assertNotSame(clone, set);
     assertEquals(clone, set);
+    assertThrows(IllegalArgumentException.class, () -> clone.add((byte) 30));
     clone.remove(ByteSetTest.FIVE);
     assertNotEquals(clone, set);
     assertEquals(SmallSet.singleton(ByteSetTest.FIVE).toSet(), set);
+    assertTrue(clone.isEmpty());
+    set.add((byte) 6);
     assertTrue(clone.isEmpty());
   }
 
@@ -693,6 +696,11 @@ class ByteSetTest {
                 if (!range.isEmpty()) {
                   byte x = range.random(random);
                   assertEquals(e.add(x), a.add(x));
+                } else {
+                  final var e2  = e;
+                  assertThrows(IllegalArgumentException.class, () -> e2.add((byte) 6));
+                  final var a2  = a;
+                  assertThrows(IllegalArgumentException.class, () -> a2.add((byte) 6));
                 }
               }
               case 5 -> {
@@ -700,6 +708,11 @@ class ByteSetTest {
                   byte x = range.random(random);
                   byte y = range.remove(x).random(random);
                   assertEquals(e.addAll(Set.of(x, y)), a.addAll(Set.of(x, y)));
+                } else {
+                  final var e2  = e;
+                  assertThrows(IllegalArgumentException.class, () -> e2.addAll(SmallSet.ofRange(3, 15).toSet()));
+                  final var a2  = a;
+                  assertThrows(IllegalArgumentException.class, () -> a2.addAll(SmallSet.ofRange(3, 15).toSet()));
                 }
               }
               case 6 -> {
