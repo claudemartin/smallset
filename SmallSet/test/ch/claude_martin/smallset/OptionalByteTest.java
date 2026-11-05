@@ -35,6 +35,10 @@ class OptionalByteTest {
     assertEquals(OptionalByte.of((byte) 5), OPT_FIVE);
     assertEquals(OptionalByte.of(5), OPT_FIVE);
     assertEquals(OptionalByte.of(OptionalInt.of(5)), OPT_FIVE);
+    assertThrows(IllegalArgumentException.class, () -> OptionalByte.of(Byte.MAX_VALUE + 1));
+    assertThrows(IllegalArgumentException.class, () -> OptionalByte.of(Byte.MIN_VALUE - 1));
+    assertThrows(IllegalArgumentException.class, () -> OptionalByte.of(1234));
+    assertThrows(IllegalArgumentException.class, () -> OptionalByte.of(-5000));
   }
 
   @Test
